@@ -16,4 +16,5 @@ urlpatterns = [
     path('api/drug-search/', views.drug_search, name='drug_search'),
     path('api/lab-test-search/', views.lab_test_search, name='lab_test_search'),
     path('print/lab-results/<int:lr_id>/', views.print_lab_results, name='print_lab_results'),
+    path('api/ai-suggest/', views.ai_suggest, name='ai_suggest'),
 ]

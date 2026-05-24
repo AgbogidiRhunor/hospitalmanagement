@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from decouple import config, Csv
 import dj_database_url
@@ -5,6 +6,8 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY')
+
+OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '')
 
 DEBUG = config('DEBUG', default=False, cast=bool)
 

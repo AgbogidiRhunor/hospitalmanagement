@@ -1,5 +1,10 @@
+import json
+import urllib.request
+import urllib.error
+from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.utils import timezone
 from django.db import transaction
@@ -8,6 +13,10 @@ from pharmacy.models import Prescription, PrescriptionDrug, Drug
 from lab.models import LabRequest, LabRequestTest, LabTest
 from accounting.models import Payment
 from management.models import User
+
+
+def _is_role(user, role):
+    return getattr(user, 'role', None) == role
 
 
 @login_required
@@ -666,3 +675,81 @@ def toggle_surgery_status(request, surgery_id):
         surgery.save()
         return JsonResponse({'status': 'ok', 'new_status': new_status, 'display': surgery.get_status_display()})
     return JsonResponse({'error': 'forbidden'}, status=403)
+
+
+@login_required
+@require_POST
+def ai_suggest(request):
+    """
+    Proxy the doctor's clinical note to the Anthropic API and return
+    structured drug + lab suggestions. The API key never leaves the server.
+    """
+    if not _is_role(request.user, 'doctor'):
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+ 
+    try:
+        body = json.loads(request.body)
+        note = body.get('note', '').strip()
+    except (json.JSONDecodeError, AttributeError):
+        return JsonResponse({'error': 'Invalid request body'}, status=400)
+ 
+    if not note or len(note) < 10:
+        return JsonResponse({'error': 'Note is too short'}, status=400)
+ 
+    api_key = getattr(settings, 'OPENROUTER_API_KEY', '')
+    if not api_key:
+        return JsonResponse({'error': 'AI not configured (missing OPENROUTER_API_KEY)'}, status=503)
+ 
+    system_prompt = (
+        "You are a clinical decision support assistant helping a hospital doctor in Nigeria. "
+        "Based on the doctor's clinical note, suggest relevant drugs and lab tests. "
+        "You MUST respond with ONLY a valid JSON object — no markdown, no explanation, no backticks. "
+        'Format:\n'
+        '{\n'
+        '  "drugs": [\n'
+        '    {"name": "Drug Name", "dosage": "e.g. 500mg TDS x 5 days", "reason": "brief reason"}\n'
+        '  ],\n'
+        '  "labs": [\n'
+        '    {"name": "Test Name", "reason": "brief reason"}\n'
+        '  ],\n'
+        '  "summary": "One sentence clinical reasoning for these suggestions."\n'
+        "}\n"
+        "Keep suggestions practical and appropriate for a Nigerian hospital context. "
+        "Limit to max 5 drugs and 5 lab tests. "
+        "If nothing is clearly indicated, return empty arrays."
+    )
+ 
+    payload = json.dumps({
+        "model": "anthropic/claude-3.5-haiku",   # cheap + fast; change to any OpenRouter model
+        "max_tokens": 1000,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"Doctor's clinical note:\n\n{note}"}
+        ]
+    }).encode('utf-8')
+ 
+    req = urllib.request.Request(
+        'https://openrouter.ai/api/v1/chat/completions',
+        data=payload,
+        headers={
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {api_key}',
+            'HTTP-Referer': 'https://hospital-mykw.onrender.com',  # your Render URL
+            'X-Title': 'Rhudesi Hospital CDS',
+        },
+        method='POST',
+    )
+ 
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            result = json.loads(resp.read().decode('utf-8'))
+        suggestion = result.get('choices', [{}])[0].get('message', {}).get('content', '')
+        return JsonResponse({'suggestion': suggestion})
+ 
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode('utf-8', errors='replace')
+        return JsonResponse({'error': f'Anthropic API error: {e.code}'}, status=502)
+    except urllib.error.URLError as e:
+        return JsonResponse({'error': 'Could not reach AI service'}, status=502)
+    except Exception as e:
+        return JsonResponse({'error': 'Unexpected server error'}, status=500)

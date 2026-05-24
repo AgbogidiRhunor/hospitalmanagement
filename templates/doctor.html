@@ -145,10 +145,25 @@
 </div></div>
 
 <!-- NOTE MODAL -->
-<div class="overlay" id="noteModal"><div class="modal">
+<div class="overlay" id="noteModal"><div class="modal modal-lg">
   <div class="modal-h"><div class="modal-title">Add Clinical Note</div><button class="modal-x" onclick="C.modal('noteModal',false)">×</button></div>
   <div class="modal-b"><input type="hidden" id="noteVid">
-    <div class="fg"><label class="lbl">Note</label><textarea class="inp" id="noteText" rows="4" placeholder="Observations, diagnosis, treatment plan…"></textarea></div>
+    <div class="fg">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+        <label class="lbl" style="margin:0">Note</label>
+        <button class="btn btn-ghost btn-xs" id="aiSuggestBtn" onclick="getAiSuggestions()" style="display:flex;align-items:center;gap:4px;font-size:.72rem;border:1px solid var(--teal);color:var(--teal);padding:3px 8px;border-radius:5px">
+          <span id="aiSuggestIcon">✨</span> <span id="aiSuggestLabel">AI Suggest</span>
+        </button>
+      </div>
+      <textarea class="inp" id="noteText" rows="4" placeholder="Observations, diagnosis, treatment plan…"></textarea>
+    </div>
+    <!-- AI SUGGESTIONS PANEL -->
+    <div id="aiPanel" style="display:none;margin-top:10px;border:1px solid rgba(0,212,200,.25);border-radius:8px;overflow:hidden">
+      <div style="background:rgba(0,212,200,.07);padding:7px 12px;font-size:.72rem;font-weight:600;color:var(--teal);letter-spacing:.04em;display:flex;align-items:center;gap:5px">
+        ✨ AI CLINICAL SUGGESTIONS <span style="font-weight:400;color:var(--muted);margin-left:4px">— review before ordering</span>
+      </div>
+      <div id="aiContent" style="padding:10px 12px"></div>
+    </div>
   </div>
   <div class="modal-f"><button class="btn btn-ghost btn-sm" onclick="C.modal('noteModal',false)">Cancel</button><button class="btn btn-primary btn-sm" onclick="submitNote()">Save Note</button></div>
 </div></div>
@@ -347,7 +362,141 @@ async function selectRoom(id,card){
 }
 
 // ── NOTES ──
-function openNote(vid){document.getElementById('noteVid').value=vid;document.getElementById('noteText').value='';C.modal('noteModal');}
+// openNote defined below with AI panel reset
+// ── AI CLINICAL SUGGESTIONS ──
+async function getAiSuggestions(){
+  const note = document.getElementById('noteText').value.trim();
+  if(!note || note.length < 15){
+    C.toast('Write a clinical note first (at least a sentence)','err');
+    return;
+  }
+  const btn = document.getElementById('aiSuggestBtn');
+  const icon = document.getElementById('aiSuggestIcon');
+  const label = document.getElementById('aiSuggestLabel');
+  const panel = document.getElementById('aiPanel');
+  const content = document.getElementById('aiContent');
+
+  // Loading state
+  btn.disabled = true;
+  icon.textContent = '⏳';
+  label.textContent = 'Thinking…';
+  panel.style.display = 'block';
+  content.innerHTML = '<div style="color:var(--muted);font-size:.78rem;padding:4px 0">Analysing clinical note…</div>';
+
+  try {
+    const response = await fetch('/records/api/ai-suggest/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': C.csrf(),
+      },
+      body: JSON.stringify({note})
+    });
+
+    const data = await response.json();
+    if(!response.ok){
+      content.innerHTML = `<div style="color:var(--red);font-size:.78rem">${data.error || 'AI request failed.'}</div>`;
+      return;
+    }
+    const text = data.suggestion || '';
+
+    let suggestions;
+    try {
+      suggestions = JSON.parse(text.replace(/```json|```/g,'').trim());
+    } catch(e) {
+      content.innerHTML = '<div style="color:var(--red);font-size:.78rem">Could not parse AI response. Try again.</div>';
+      return;
+    }
+
+    renderAiSuggestions(suggestions);
+
+  } catch(err) {
+    content.innerHTML = '<div style="color:var(--red);font-size:.78rem">AI request failed. Check connection.</div>';
+  } finally {
+    btn.disabled = false;
+    icon.textContent = '✨';
+    label.textContent = 'AI Suggest';
+  }
+}
+
+function renderAiSuggestions(s){
+  const content = document.getElementById('aiContent');
+  let html = '';
+
+  if(s.summary){
+    html += `<div style="font-size:.76rem;color:var(--muted);margin-bottom:10px;font-style:italic">${s.summary}</div>`;
+  }
+
+  if(s.drugs && s.drugs.length){
+    html += `<div style="font-size:.7rem;font-weight:700;letter-spacing:.05em;color:var(--navy);margin-bottom:5px">💊 SUGGESTED DRUGS</div>`;
+    html += `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">`;
+    s.drugs.forEach(d => {
+      html += `<div style="border:1px solid rgba(11,34,64,.15);border-radius:6px;padding:5px 9px;font-size:.74rem;cursor:pointer;transition:all .15s;background:#fff"
+        title="${d.reason}"
+        onmouseenter="this.style.borderColor='var(--teal)';this.style.background='rgba(0,212,200,.06)'"
+        onmouseleave="this.style.borderColor='rgba(11,34,64,.15)';this.style.background='#fff'"
+        onclick="addAiDrug('${d.name.replace(/'/g,"\'")}','${(d.dosage||'').replace(/'/g,"\'")}')">
+        <div style="font-weight:600;color:var(--navy)">${d.name}</div>
+        <div style="color:var(--muted);font-size:.66rem">${d.dosage||''}</div>
+        <div style="color:var(--teal);font-size:.62rem;margin-top:2px">+ Add to Rx</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  if(s.labs && s.labs.length){
+    html += `<div style="font-size:.7rem;font-weight:700;letter-spacing:.05em;color:var(--navy);margin-bottom:5px">🧪 SUGGESTED LAB TESTS</div>`;
+    html += `<div style="display:flex;flex-wrap:wrap;gap:6px">`;
+    s.labs.forEach(l => {
+      html += `<div style="border:1px solid rgba(11,34,64,.15);border-radius:6px;padding:5px 9px;font-size:.74rem;cursor:pointer;transition:all .15s;background:#fff"
+        title="${l.reason}"
+        onmouseenter="this.style.borderColor='var(--teal)';this.style.background='rgba(0,212,200,.06)'"
+        onmouseleave="this.style.borderColor='rgba(11,34,64,.15)';this.style.background='#fff'"
+        onclick="addAiLab('${l.name.replace(/'/g,"\'")}')">
+        <div style="font-weight:600;color:var(--navy)">${l.name}</div>
+        <div style="color:var(--muted);font-size:.66rem">${l.reason||''}</div>
+        <div style="color:var(--teal);font-size:.62rem;margin-top:2px">+ Add to Lab Order</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  if(!s.drugs?.length && !s.labs?.length){
+    html = '<div style="color:var(--muted);font-size:.78rem">No specific suggestions for this note.</div>';
+  }
+
+  content.innerHTML = html;
+}
+
+// Add AI-suggested drug to Rx modal's pending list (by name search)
+function addAiDrug(name, dosage){
+  const vid = document.getElementById('noteVid').value;
+  // Save note first if needed, then open Rx
+  // Pre-seed a pending AI drug that gets added when Rx modal opens
+  window._aiPendingDrug = {name, dosage};
+  C.toast(`Opening Rx — search for "${name}"`, 'ok');
+  C.modal('noteModal', false);
+  setTimeout(()=>openRx(vid), 200);
+}
+
+// Add AI-suggested lab test to Lab modal's pending list (by name search)
+function addAiLab(name){
+  const vid = document.getElementById('noteVid').value;
+  window._aiPendingLab = {name};
+  C.toast(`Opening Lab — search for "${name}"`, 'ok');
+  C.modal('noteModal', false);
+  setTimeout(()=>openLab(vid), 200);
+}
+
+// Clear AI panel when note modal opens fresh
+function openNote(vid){
+  document.getElementById('noteVid').value = vid;
+  document.getElementById('noteText').value = '';
+  document.getElementById('aiPanel').style.display = 'none';
+  document.getElementById('aiContent').innerHTML = '';
+  C.modal('noteModal');
+}
+
 async function submitNote(){
   const vid=document.getElementById('noteVid').value;
   const note=document.getElementById('noteText').value.trim();
@@ -369,7 +518,15 @@ function openLab(vid){
       if(!labTests.find(x=>x.id===t.id)){labTests.push({...t,note:''});renderLab();}
     });
   }
-  setTimeout(()=>_labSearch&&_labSearch.open(),80);
+  setTimeout(()=>{
+    if(_labSearch) _labSearch.open();
+    if(window._aiPendingLab){
+      const inp = document.getElementById('labTestInp');
+      inp.value = window._aiPendingLab.name;
+      inp.dispatchEvent(new Event('input'));
+      window._aiPendingLab = null;
+    }
+  },120);
 }
 function renderLab(){
   document.getElementById('labList').innerHTML=labTests.length?labTests.map((t,i)=>`
@@ -404,7 +561,15 @@ function openRx(vid){
       if(!rxDrugs.find(x=>x.id===d.id)){rxDrugs.push({...d,qty:1,dosage:'',inj_days:'',inj_times:''});renderRx();}
     });
   }
-  setTimeout(()=>_rxSearch&&_rxSearch.open(),80);
+  setTimeout(()=>{
+    if(_rxSearch) _rxSearch.open();
+    if(window._aiPendingDrug){
+      const inp = document.getElementById('rxDrugInp');
+      inp.value = window._aiPendingDrug.name;
+      inp.dispatchEvent(new Event('input'));
+      window._aiPendingDrug = null;
+    }
+  },120);
 }
 function renderRx(){
   document.getElementById('rxList').innerHTML=rxDrugs.length?rxDrugs.map((d,i)=>`
