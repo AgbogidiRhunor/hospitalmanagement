@@ -1,83 +1,126 @@
 {% extends "base.html" %}
 {% load hp_tags %}
 {% block title %}Accountant — Rhudesi{% endblock %}
-{% block logo_suffix %}Billing{% endblock %}
-{% block page_title %}Payments{% endblock %}
+{% block logo_sub %}Billing{% endblock %}
+{% block role_label %}Accountant{% endblock %}
+
 {% block nav %}
-<a href="{% url 'accountant_dashboard' %}" class="sb-link on"><span class="sb-link-ico">💳</span>Pending <span class="badge {% if pending %}b-amber{% else %}b-teal{% endif %}" style="margin-left:auto" id="pendBadge">{{ pending|length }}</span></a>
-<a href="{% url 'accountant_history' %}" class="sb-link"><span class="sb-link-ico">📂</span>History</a>
+<a href="{% url 'accountant_dashboard' %}" class="sb-item active">
+  <span class="sb-icon">💳</span> Pending
+  <span class="sb-badge {% if not pending %}muted{% endif %}" id="pendBadge">{{ pending|length }}</span>
+</a>
+<a href="{% url 'accountant_history' %}" class="sb-item">
+  <span class="sb-icon">📂</span> History
+</a>
 {% endblock %}
+
+{% block page_title %}Payments{% endblock %}
+
 {% block topbar_widgets %}
-<div style="display:flex;align-items:center;gap:8px">
-  <span class="txt-xs txt-dim">On Sit</span>
-  <label class="tog"><input type="checkbox" id="togSit" {% if accountant.is_on_sit %}checked{% endif %} onchange="toggleField('is_on_sit',this)"><div class="tog-track"></div><div class="tog-dot"></div></label>
+<div class="flex items-center gap-2">
+  <span class="text-xs text-muted">On Sit</span>
+  <label class="toggle">
+    <input type="checkbox" id="togSit" {% if accountant.is_on_sit %}checked{% endif %} onchange="toggleField('is_on_sit',this)">
+    <div class="toggle-track"></div>
+    <div class="toggle-dot"></div>
+  </label>
 </div>
 {% endblock %}
+
 {% block content %}
+
 <div class="tabs">
-  <div class="tab on" data-tabs="ac" data-tab="acPend">Pending <span class="tab-ct" id="pendCount" style="{% if pending %}background:var(--amber-glow);color:var(--amber){% endif %}">{{ pending|length }}</span></div>
-  <div class="tab" data-tabs="ac" data-tab="acDone">Processed <span class="tab-ct">{{ processed|length }}</span></div>
+  <div class="tab active" data-group="ac" data-tab="acPend">
+    Pending
+    <span class="tab-count {% if pending %}b-amber{% endif %}" id="pendCount">{{ pending|length }}</span>
+  </div>
+  <div class="tab" data-group="ac" data-tab="acDone">
+    Processed
+    <span class="tab-count">{{ processed|length }}</span>
+  </div>
 </div>
 
-<div id="acPend" data-group="ac" class="panel on">
+<!-- ═══ PENDING ═══ -->
+<div id="acPend" data-panel="ac" class="panel active">
   {% if not pending %}
-  <div class="card" id="allClearCard"><div style="padding:52px;text-align:center">
-    <div style="font-size:2rem;margin-bottom:8px">✓</div>
-    <div style="font-weight:700;color:var(--teal)">All caught up!</div>
-    <div style="font-size:.82rem;color:var(--text3);margin-top:4px">No pending payments</div>
-  </div></div>
+  <div class="card" id="allClearCard">
+    <div class="empty-state">
+      <div class="empty-icon">✓</div>
+      <div class="empty-title" style="color:var(--teal)">All caught up!</div>
+      <div class="empty-sub">No pending payments right now.</div>
+    </div>
+  </div>
   {% else %}
+
   {% regroup pending by payment_group as payment_groups %}
   {% for group in payment_groups %}
+
     {% if group.grouper %}
-      {# Grouped session (surgery- or admission-) #}
+      {# ── GROUPED PAYMENT (Surgery or Admission bundle) ── #}
       {% with items=group.list first=group.list.0 %}
       {% with is_surg=group.grouper|slice:":7" %}
-      <div class="card" style="padding:0;overflow:hidden;border-color:{% if is_surg == 'surgery' %}rgba(124,58,237,.3){% else %}var(--teal-border){% endif %};margin-bottom:10px">
-        {# Group header #}
-        <div style="padding:12px 16px;background:{% if is_surg == 'surgery' %}rgba(124,58,237,.07){% else %}var(--teal-glow){% endif %};cursor:pointer;display:flex;align-items:center;gap:10px" onclick="C.toggle('grp_{{ group.grouper|slugify }}')">
-          <div style="width:34px;height:34px;border-radius:50%;background:{% if is_surg == 'surgery' %}rgba(124,58,237,.12){% else %}var(--teal-glow){% endif %};border:1px solid {% if is_surg == 'surgery' %}rgba(124,58,237,.25){% else %}var(--teal-border){% endif %};display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0">{% if is_surg == 'surgery' %}⚕{% else %}🛏{% endif %}</div>
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:700;font-size:.85rem">{{ first.patient.display_name }}
-              <span class="badge {% if is_surg == 'surgery' %}" style="background:rgba(124,58,237,.1);color:#7c3aed;border:1px solid rgba(124,58,237,.25){% else %}b-teal{% endif %}">{% if is_surg == 'surgery' %}⚕ Surgery Bundle{% else %}🛏 Admission{% endif %}</span>
-              {% if first.surgery %}<span class="badge" style="background:rgba(124,58,237,.06);color:#7c3aed;font-size:.6rem;border:1px solid rgba(124,58,237,.15)">{{ first.surgery.procedure_name|truncatechars:22 }}</span>{% endif %}
+      <div class="card" style="margin-bottom:12px;border-color:{% if is_surg == 'surgery' %}var(--purple-border){% else %}var(--teal-border){% endif %};overflow:visible">
+        <div class="card-header" style="cursor:pointer;background:{% if is_surg == 'surgery' %}var(--purple-light){% else %}var(--teal-light){% endif %}" onclick="toggleGroup('grp_{{ group.grouper|slugify }}')">
+          <div class="flex items-center gap-3 flex-1" style="min-width:0">
+            <div style="width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1rem;background:{% if is_surg == 'surgery' %}var(--purple-light){% else %}var(--teal-light){% endif %};border:1px solid {% if is_surg == 'surgery' %}var(--purple-border){% else %}var(--teal-border){% endif %}">
+              {% if is_surg == 'surgery' %}⚕{% else %}🛏{% endif %}
             </div>
-            <div style="font-size:.76rem;color:var(--text3);margin-top:2px">
-              {{ items|length }} payment(s) ·
-              {% with pending_count=0 %}
-              {% for p in items %}{% if not p.is_paid %}<span style="color:var(--amber)">{{ p|length }}</span>{% endif %}{% endfor %}
-              {% endwith %}
-              Visit #{{ first.visit.id }} · {{ first.created_at|date:"d M" }}
+            <div style="min-width:0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="fw-7 text-sm">{{ first.patient.display_name }}</span>
+                <span class="badge {% if is_surg == 'surgery' %}b-purple{% else %}b-teal{% endif %}">
+                  {% if is_surg == 'surgery' %}⚕ Surgery Bundle{% else %}🛏 Admission{% endif %}
+                </span>
+                {% if first.surgery %}<span class="badge b-gray">{{ first.surgery.procedure_name|truncatechars:22 }}</span>{% endif %}
+              </div>
+              <div class="text-xs text-muted mt-1">
+                {{ items|length }} payment(s) · Visit #{{ first.visit.id }} · {{ first.created_at|date:"d M" }}
+              </div>
             </div>
           </div>
-          <span style="font-size:.7rem;color:var(--text3)">▾</span>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--text3);flex-shrink:0">
+            <path d="M3 5l4 4 4-4"/>
+          </svg>
         </div>
-        {# Group body - individual payments #}
+
         <div id="grp_{{ group.grouper|slugify }}">
           {% for pay in items %}
-          <div id="pcard{{ pay.id }}" style="border-top:1px solid var(--border);{% if pay.is_paid %}opacity:.5;{% endif %}">
-            <div style="padding:11px 16px;display:flex;align-items:center;gap:10px">
+          <div id="pcard{{ pay.id }}" style="border-top:1px solid var(--border);{% if pay.is_paid %}opacity:.5{% endif %}">
+            <div class="flex items-center gap-3" style="padding:12px 18px;flex-wrap:wrap">
               <div style="flex:1;min-width:0">
-                <div style="font-size:.82rem;font-weight:600;display:flex;flex-wrap:wrap;gap:4px;align-items:center">
-                  {{ pay.get_payment_type_display }}
-                  {% if pay.total_parts > 1 %}<span class="badge b-blue" style="font-size:.58rem">Part {{ pay.part_number }}/{{ pay.total_parts }}</span>{% endif %}
-                  {% if pay.is_paid %}<span class="badge b-teal" style="font-size:.58rem">✓ Paid</span>{% endif %}
-                  {% if pay.discount_amount %}<span class="badge b-teal" style="font-size:.58rem">-₦{{ pay.discount_amount|floatformat:0 }}</span>{% endif %}
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="fw-6 text-sm">{{ pay.get_payment_type_display }}</span>
+                  {% if pay.total_parts > 1 %}<span class="badge b-blue">Part {{ pay.part_number }}/{{ pay.total_parts }}</span>{% endif %}
+                  {% if pay.is_paid %}<span class="badge b-green">✓ Paid</span>{% endif %}
                 </div>
-                <div style="font-size:.75rem;color:var(--text3);margin-top:2px">
-                  <span style="font-family:'Fira Code',monospace;color:var(--amber);font-weight:700">₦{{ pay.amount|floatformat:0 }}</span>
-                  {% if pay.prescription %} · {{ pay.prescription.drugs.count }} drug(s){% endif %}
-                  {% if pay.lab_request %} · {{ pay.lab_request.tests.count }} test(s){% endif %}
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="mono fw-7" style="color:var(--amber);font-size:.9rem">₦{{ pay.amount|floatformat:0 }}</span>
+                  {% if pay.prescription %}<span class="text-xs text-muted">· {{ pay.prescription.drugs.count }} drug(s)</span>{% endif %}
+                  {% if pay.lab_request %}<span class="text-xs text-muted">· {{ pay.lab_request.tests.count }} test(s)</span>{% endif %}
                 </div>
                 {% if pay.prescription %}
-                <div style="margin-top:5px">{% for item in pay.prescription.drugs.all %}<div style="font-size:.72rem;color:var(--text3);display:flex;justify-content:space-between"><span>{{ item.drug.name }} ×{{ item.quantity }} — {{ item.dosage }}</span><span class="mono">₦{{ item.price_at_time|floatformat:0 }}</span></div>{% endfor %}</div>
+                <div style="margin-top:6px">
+                  {% for item in pay.prescription.drugs.all %}
+                  <div class="flex justify-between text-xs text-muted">
+                    <span>{{ item.drug.name }} ×{{ item.quantity }}{% if item.dosage %} — {{ item.dosage }}{% endif %}</span>
+                    <span class="mono">₦{{ item.price_at_time|floatformat:0 }}</span>
+                  </div>
+                  {% endfor %}
+                </div>
                 {% endif %}
                 {% if pay.lab_request %}
-                <div style="margin-top:5px">{% for t in pay.lab_request.tests.all %}<div style="font-size:.72rem;color:var(--text3);display:flex;justify-content:space-between"><span>{{ t.test.name }}</span><span class="mono">₦{{ t.price_at_time|floatformat:0 }}</span></div>{% endfor %}</div>
+                <div style="margin-top:6px">
+                  {% for t in pay.lab_request.tests.all %}
+                  <div class="flex justify-between text-xs text-muted">
+                    <span>{{ t.test.name }}</span>
+                    <span class="mono">₦{{ t.price_at_time|floatformat:0 }}</span>
+                  </div>
+                  {% endfor %}
+                </div>
                 {% endif %}
               </div>
               {% if not pay.is_paid %}
-              <button class="btn btn-primary btn-sm" style="flex-shrink:0" onclick="confirmPay({{ pay.id }},this)">Confirm ✓</button>
+              <button class="btn btn-primary btn-sm flex-shrink-0" onclick="confirmPay({{ pay.id }},this)">Confirm ✓</button>
               {% endif %}
             </div>
           </div>
@@ -86,48 +129,88 @@
       </div>
       {% endwith %}
       {% endwith %}
+
     {% else %}
-      {# Ungrouped — single standalone payment #}
+      {# ── STANDALONE PAYMENT ── #}
       {% for pay in group.list %}
-      <div class="vc payment-card" id="pcard{{ pay.id }}" style="border-color:var(--amber-border)">
-        <div class="vc-h" onclick="C.toggle('pd{{ pay.id }}')">
-          <div class="vc-num" style="background:var(--amber-glow);color:var(--amber);border-color:var(--amber-border);font-size:.7rem;font-family:'Fira Code',monospace">₦</div>
+      <div class="visit-card payment-card" id="pcard{{ pay.id }}" style="border-color:var(--amber-border);margin-bottom:10px">
+        <div class="vc-header" onclick="toggleVc('pd{{ pay.id }}','ch{{ pay.id }}')">
+          <div class="vc-queue" style="background:var(--amber-light);color:var(--amber);border-color:var(--amber-border);font-size:.72rem">₦</div>
           <div class="vc-info">
-            <div class="vc-name">{{ pay.patient.display_name }}
+            <div class="vc-name">
+              {{ pay.patient.display_name }}
               <span class="badge b-amber">{{ pay.get_payment_type_display }}</span>
+              {% if pay.surgery %}<span class="badge b-purple">⚕ Surgery</span>{% endif %}
+              {% if pay.admission and not pay.surgery %}<span class="badge b-teal">🛏 Ward</span>{% endif %}
             </div>
             <div class="vc-meta">
-              <span style="font-family:'Fira Code',monospace;font-size:.85rem;color:var(--amber);font-weight:700">₦{{ pay.amount|floatformat:0 }}</span>
-              <span>·</span><span>Visit #{{ pay.visit.id }}</span>
-              <span>·</span><span>{{ pay.created_at|date:"d M, H:i" }}</span>
-              {% if pay.prescription %}<span>·</span><span class="txt-xs">{{ pay.prescription.drugs.count }} drug(s)</span>{% endif %}
-              {% if pay.lab_request %}<span>·</span><span class="txt-xs">{{ pay.lab_request.tests.count }} test(s)</span>{% endif %}
+              <span class="mono fw-7" style="color:var(--amber)">₦{{ pay.amount|floatformat:0 }}</span>
+              <span class="vc-meta-dot"></span>
+              <span>Visit #{{ pay.visit.id }}</span>
+              <span class="vc-meta-dot"></span>
+              <span>{{ pay.created_at|date:"d M, H:i" }}</span>
             </div>
           </div>
-          <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();confirmPay({{ pay.id }},this)">Confirm Paid ✓</button>
+          <div class="flex items-center gap-2 flex-shrink-0" onclick="event.stopPropagation()">
+            <button class="btn btn-primary btn-sm" onclick="confirmPay({{ pay.id }},this)">Confirm ✓</button>
+            <svg id="ch{{ pay.id }}" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--text3);transition:transform .2s">
+              <path d="M3 5l4 4 4-4"/>
+            </svg>
+          </div>
         </div>
-        <div class="vc-body hidden" id="pd{{ pay.id }}">
+
+        <div class="vc-body" id="pd{{ pay.id }}">
           {% if pay.prescription %}
-          <div class="sl">Drug Items{% if pay.surgery %} <span style="background:rgba(124,58,237,.1);color:#7c3aed;padding:1px 6px;border-radius:3px;font-size:.6rem;font-weight:700">⚕ FOR SURGERY</span>{% elif pay.admission %} <span style="background:rgba(14,165,160,.1);color:var(--teal);padding:1px 6px;border-radius:3px;font-size:.6rem;font-weight:700">🛏 FOR ADMISSION</span>{% endif %}</div>
+          <div class="section-label">
+            Drug Items
+            {% if pay.surgery %}<span class="badge b-purple">⚕ Surgery</span>{% elif pay.admission %}<span class="badge b-teal">🛏 Admission</span>{% endif %}
+          </div>
           {% for item in pay.prescription.drugs.all %}
-          <div class="drug-row"><div class="drug-name">{{ item.drug.name }}{% if item.drug.strength %} <span class="txt-muted">({{ item.drug.strength }})</span>{% endif %}<span class="drug-sub">{{ item.dosage }} · ×{{ item.quantity }}</span></div><span class="mono txt-sm">₦{{ item.price_at_time|floatformat:0 }}</span></div>
+          <div class="drug-row">
+            <div class="drug-name">
+              {{ item.drug.name }}{% if item.drug.strength %} <span class="text-muted">({{ item.drug.strength }})</span>{% endif %}
+              <span class="drug-meta">{{ item.dosage }} · ×{{ item.quantity }}</span>
+            </div>
+            <span class="mono text-sm">₦{{ item.price_at_time|floatformat:0 }}</span>
+          </div>
           {% endfor %}
           {% endif %}
+
           {% if pay.lab_request %}
-          <div class="sl">Lab Tests{% if pay.surgery %} <span style="background:rgba(124,58,237,.1);color:#7c3aed;padding:1px 6px;border-radius:3px;font-size:.6rem;font-weight:700">⚕ FOR SURGERY</span>{% elif pay.admission %} <span style="background:rgba(14,165,160,.1);color:var(--teal);padding:1px 6px;border-radius:3px;font-size:.6rem;font-weight:700">🛏 FOR ADMISSION</span>{% endif %}</div>
+          <div class="section-label">
+            Lab Tests
+            {% if pay.surgery %}<span class="badge b-purple">⚕ Surgery</span>{% elif pay.admission %}<span class="badge b-teal">🛏 Admission</span>{% endif %}
+          </div>
           {% for t in pay.lab_request.tests.all %}
-          <div class="drug-row"><div class="drug-name">{{ t.test.name }}</div><span class="mono txt-sm">₦{{ t.price_at_time|floatformat:0 }}</span></div>
+          <div class="drug-row">
+            <div class="drug-name">{{ t.test.name }}</div>
+            <span class="mono text-sm">₦{{ t.price_at_time|floatformat:0 }}</span>
+          </div>
           {% endfor %}
           {% endif %}
+
           {% if pay.admission and pay.payment_type == 'admission' %}
-          <div class="sl">Admission Details</div>
-          <div class="drug-row"><div class="drug-name">{{ pay.admission.get_ward_display }} — Bed {{ pay.admission.bed_number }}<span class="drug-sub">{{ pay.admission.admission_reason|truncatechars:60 }}</span></div><span class="badge b-amber">₦{{ pay.amount|floatformat:0 }}</span></div>
+          <div class="section-label">Admission Details</div>
+          <div class="drug-row">
+            <div class="drug-name">
+              {{ pay.admission.get_ward_display }} — Bed {{ pay.admission.bed_number }}
+              <span class="drug-meta">{{ pay.admission.admission_reason|truncatechars:60 }}</span>
+            </div>
+            <span class="badge b-amber">₦{{ pay.amount|floatformat:0 }}</span>
+          </div>
           {% endif %}
+
           {% if pay.admission and pay.payment_type == 'admission_medication' %}
-          <div class="sl">Ward Medication <span style="background:rgba(14,165,160,.1);color:var(--teal);padding:1px 5px;border-radius:3px;font-size:.6rem;font-weight:700">🛏 WARD Rx</span></div>
+          <div class="section-label">Ward Medication <span class="badge b-teal">🛏 Ward Rx</span></div>
           {% for rx in pay.admission.prescriptions.all %}{% if rx.status == 'active' %}
           {% for item in rx.items.all %}
-          <div class="drug-row"><div class="drug-name">{{ item.drug_name }}{% if item.drug.strength %} <span class="txt-muted">({{ item.drug.strength }})</span>{% endif %}{% if item.drug.dosage_form %} <span class="txt-muted txt-xs">{{ item.drug.dosage_form }}</span>{% endif %}<span class="drug-sub">×{{ item.quantity }}{% if item.dosage %} — {{ item.dosage }}{% endif %}</span></div><span class="mono txt-sm">₦{{ item.price|floatformat:0 }}</span></div>
+          <div class="drug-row">
+            <div class="drug-name">
+              {{ item.drug_name }}{% if item.drug.strength %} <span class="text-muted">({{ item.drug.strength }})</span>{% endif %}{% if item.drug.dosage_form %} <span class="text-xs text-muted">{{ item.drug.dosage_form }}</span>{% endif %}
+              <span class="drug-meta">×{{ item.quantity }}{% if item.dosage %} — {{ item.dosage }}{% endif %}</span>
+            </div>
+            <span class="mono text-sm">₦{{ item.price|floatformat:0 }}</span>
+          </div>
           {% endfor %}
           {% endif %}{% endfor %}
           {% endif %}
@@ -135,69 +218,99 @@
       </div>
       {% endfor %}
     {% endif %}
+
   {% endfor %}
   {% endif %}
 </div>
 
-<div id="acDone" data-group="ac" class="panel">
+<!-- ═══ PROCESSED ═══ -->
+<div id="acDone" data-panel="ac" class="panel">
   {% if not processed %}
-  <div class="card"><div style="padding:40px;text-align:center;color:var(--text3)">No processed payments yet</div></div>
+  <div class="card">
+    <div class="empty-state">
+      <div class="empty-icon">📂</div>
+      <div class="empty-title">No processed payments yet</div>
+    </div>
+  </div>
   {% else %}
-  <div class="card"><div class="tbl-wrap"><table>
-    <thead><tr><th>Patient</th><th>Type</th><th>Amount</th><th>Paid At</th><th></th></tr></thead>
-    <tbody>{% for pay in processed %}<tr>
-      <td class="fw-7">{{ pay.patient.display_name }}</td>
-      <td>
-        <span class="badge b-teal">{{ pay.get_payment_type_display }}</span>
-        {% if pay.total_parts > 1 %}<span class="badge b-blue" style="font-size:.6rem;margin-left:3px">Part {{ pay.part_number }}/{{ pay.total_parts }}</span>{% endif %}
-        {% if pay.surgery %}<span class="badge" style="background:rgba(124,58,237,.1);color:#7c3aed;font-size:.6rem;margin-left:3px">⚕</span>{% endif %}
-      </td>
-      <td class="mono fw-7" style="color:var(--teal)">₦{{ pay.amount|floatformat:0 }}</td>
-      <td class="txt-xs txt-muted">{{ pay.paid_at|date:"d M, H:i" }}</td>
-      <td>{% if pay.total_parts == 1 or pay.part_number == pay.total_parts %}<a href="/accounting/receipt/{{ pay.id }}/print/" target="_blank" class="btn btn-ghost btn-xs">🖨 Receipt</a>{% else %}<span class="txt-xs txt-muted">Part {{ pay.part_number }}/{{ pay.total_parts }}</span>{% endif %}</td>
-    </tr>{% endfor %}</tbody>
-  </table></div></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Patient</th>
+          <th>Type</th>
+          <th>Amount</th>
+          <th>Paid At</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pay in processed %}
+        <tr>
+          <td>{{ pay.patient.display_name }}</td>
+          <td>
+            <div class="flex items-center gap-2">
+              <span class="badge b-green">{{ pay.get_payment_type_display }}</span>
+              {% if pay.total_parts > 1 %}<span class="badge b-blue">Part {{ pay.part_number }}/{{ pay.total_parts }}</span>{% endif %}
+              {% if pay.surgery %}<span class="badge b-purple">⚕</span>{% endif %}
+            </div>
+          </td>
+          <td class="mono fw-7 text-teal">₦{{ pay.amount|floatformat:0 }}</td>
+          <td class="text-xs text-muted">{{ pay.paid_at|date:"d M, H:i" }}</td>
+          <td>
+            {% if pay.total_parts == 1 or pay.part_number == pay.total_parts %}
+            <a href="/accounting/receipt/{{ pay.id }}/print/" target="_blank" class="btn btn-ghost btn-xs">🖨 Receipt</a>
+            {% else %}
+            <span class="text-xs text-muted">Part {{ pay.part_number }}/{{ pay.total_parts }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
   {% endif %}
 </div>
+
 {% endblock %}
+
 {% block js %}
 <script>
-async function toggleField(field,el){
-  const r=await C.post('/api/toggle-availability/',{field});
-  if(r.status==='ok')C.toast(r.value?'On sit':'Off sit','ok');
-  else{C.toast(r.error||'Error','err');el.checked=!el.checked;}
+function toggleVc(bodyId, chevronId){
+  const body = document.getElementById(bodyId);
+  const ch = document.getElementById(chevronId);
+  if(body){ const open = body.classList.toggle('open'); if(ch) ch.style.transform = open ? 'rotate(180deg)' : ''; }
+}
+function toggleGroup(id){
+  const el = document.getElementById(id);
+  if(el) el.classList.toggle('hidden');
 }
 
-async function confirmPay(id,btn){
-  btn.disabled=true;btn.textContent='…';
-  const r=await C.post(`/accounting/confirm/${id}/`);
-  if(r.status==='ok'){
-    C.toast('Payment confirmed!','ok');
-    const card=document.getElementById('pcard'+id);
+async function toggleField(field, el){
+  const r = await R.post('/api/toggle-availability/', {field});
+  if(r.status === 'ok') R.toast(r.value ? 'On sit' : 'Off sit', 'ok');
+  else { R.toast(r.error||'Error','err'); el.checked = !el.checked; }
+}
+
+async function confirmPay(id, btn){
+  btn.disabled = true; btn.textContent = '…';
+  const r = await R.post(`/accounting/confirm/${id}/`);
+  if(r.status === 'ok'){
+    R.toast('Payment confirmed!', 'ok');
+    const card = document.getElementById('pcard'+id);
     if(card){
-      card.style.opacity='.45';
-      card.style.borderColor='var(--teal-border)';
+      card.style.opacity = '.45';
+      card.style.borderColor = 'var(--teal-border)';
       btn.remove();
-      const nameEl=card.querySelector('.vc-name');
-      if(nameEl){const b=document.createElement('span');b.className='badge b-teal';b.style.fontSize='.62rem';b.textContent='✓ Paid';nameEl.appendChild(b);}
     }
-    // Update pending count
-    const pendCount=document.getElementById('pendCount');
-    const pendBadge=document.getElementById('pendBadge');
-    if(pendCount){const n=Math.max(0,(parseInt(pendCount.textContent)||1)-1);pendCount.textContent=n;if(n===0){pendCount.style.background='';pendCount.style.color='';}}
-    if(pendBadge){const n=Math.max(0,(parseInt(pendBadge.textContent)||1)-1);pendBadge.textContent=n;if(n===0){pendBadge.className='badge b-teal';}}
-    // Check if all pending items are confirmed
-    const stillPending=document.querySelectorAll('.payment-card:not([style*="opacity:.45"])');
-    if(!stillPending.length){
-      const panel=document.getElementById('acPend');
-      const empty=document.createElement('div');empty.className='card';empty.id='allClearCard';
-      empty.innerHTML='<div style="padding:52px;text-align:center"><div style="font-size:2rem;margin-bottom:8px">✓</div><div style="font-weight:700;color:var(--teal)">All caught up!</div><div style="font-size:.82rem;color:var(--text3);margin-top:4px">No pending payments</div></div>';
-      panel.appendChild(empty);
-    }
-    setTimeout(()=>location.reload(),1200);
+    const pendCount = document.getElementById('pendCount');
+    const pendBadge = document.getElementById('pendBadge');
+    if(pendCount){ const n = Math.max(0,(parseInt(pendCount.textContent)||1)-1); pendCount.textContent = n; }
+    if(pendBadge){ const n = Math.max(0,(parseInt(pendBadge.textContent)||1)-1); pendBadge.textContent = n; }
+    setTimeout(() => location.reload(), 1200);
   } else {
-    btn.disabled=false;btn.textContent='Confirm Paid ✓';
-    C.toast(r.error||'Error confirming','err');
+    btn.disabled = false; btn.textContent = 'Confirm ✓';
+    R.toast(r.error||'Error confirming','err');
   }
 }
 </script>

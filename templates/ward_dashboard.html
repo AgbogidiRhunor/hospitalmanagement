@@ -1,199 +1,210 @@
 {% extends "base.html" %}
 {% load hp_tags %}
 {% block title %}Ward — Rhudesi{% endblock %}
-{% block logo_suffix %}Ward{% endblock %}
-{% block page_title %}Ward Dashboard{% endblock %}
+{% block logo_sub %}Ward{% endblock %}
+{% block role_label %}{% if user.role == 'doctor' %}Doctor{% else %}Nurse{% endif %}{% endblock %}
+
 {% block nav %}
 {% if user.role == 'doctor' %}
-<a href="{% url 'doctor_dashboard' %}" class="sb-link"><span class="sb-link-ico">👥</span>Queue</a>
-<a href="{% url 'ward_dashboard' %}" class="sb-link on"><span class="sb-link-ico">🛏</span>Ward</a>
-<a href="{% url 'doctor_history' %}" class="sb-link"><span class="sb-link-ico">📂</span>History</a>
-{% else %}
-<a href="{% url 'nurse_dashboard' %}" class="sb-link"><span class="sb-link-ico">📋</span>Vitals Queue</a>
-<a href="{% url 'ward_dashboard' %}" class="sb-link on"><span class="sb-link-ico">🛏</span>Ward</a>
-<a href="{% url 'nurse_history' %}" class="sb-link"><span class="sb-link-ico">📂</span>History</a>
+<a href="{% url 'doctor_dashboard' %}" class="sb-item"><span class="sb-icon">👥</span> Queue</a>
+{% endif %}
+<a href="{% url 'ward_dashboard' %}" class="sb-item active"><span class="sb-icon">🛏</span> Ward</a>
+{% if user.role == 'doctor' %}
+<a href="{% url 'doctor_history' %}" class="sb-item"><span class="sb-icon">📂</span> History</a>
 {% endif %}
 {% endblock %}
+
+{% block page_title %}Ward Dashboard{% endblock %}
+
 {% block content %}
-<style>
-/* ── Ward dashboard mobile ── */
-.ward-actions{display:flex;gap:5px;align-items:center;flex-shrink:0;flex-wrap:wrap}
-@media(max-width:700px){
-  .ward-actions{width:100%;overflow-x:auto;padding:8px 12px 10px;gap:5px;scrollbar-width:none;border-top:1px solid var(--border);margin-top:4px;flex-wrap:nowrap}
-  .ward-actions::-webkit-scrollbar{display:none}
-  .ward-actions .btn{flex-shrink:0;white-space:nowrap}
-  .vc-h{flex-wrap:wrap}
-  .g2{grid-template-columns:1fr !important}
-}
-</style>
 
 {% if not admissions %}
-<div class="card"><div style="padding:56px;text-align:center">
-  <div style="font-size:2.5rem;margin-bottom:10px">🛏</div>
-  <div style="font-weight:700;color:var(--text);margin-bottom:4px">No admitted patients</div>
-  <div style="font-size:.82rem;color:var(--text3)">Patients admitted by doctors will appear here</div>
-</div></div>
+<div class="card">
+  <div class="empty-state">
+    <div class="empty-icon">🛏</div>
+    <div class="empty-title">No admitted patients</div>
+    <div class="empty-sub">Patients admitted by doctors will appear here.</div>
+  </div>
+</div>
 {% endif %}
 
 {% for wc in ward_choices %}
 {% with ward_adms=admissions|ward_filter:wc.0 %}
 {% if ward_adms %}
-<div style="margin-bottom:28px">
-  <div class="flex items-c gap-2 mb-3" style="margin-bottom:12px">
-    <span style="font-size:.7rem;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--teal)">{{ wc.1 }}</span>
+<div style="margin-bottom:32px">
+
+  <!-- Ward section header -->
+  <div class="flex items-center gap-3" style="margin-bottom:14px">
+    <span style="font-size:.68rem;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--teal)">{{ wc.1 }}</span>
     <span class="badge b-teal">{{ ward_adms|length }} patient(s)</span>
     <div style="flex:1;height:1px;background:var(--border)"></div>
   </div>
 
   {% for adm in ward_adms %}
   {% with surg=adm.visit.surgeries.all|first %}
-  <div class="vc" style="border-color:{% if adm.status == 'admitted' %}var(--teal-border){% else %}var(--border){% endif %}{% if surg and surg.status == 'underway' %};border-left:3px solid rgba(124,58,237,.5){% endif %}">
-    <div class="vc-h" onclick="C.toggle('wb{{ adm.id }}')">
-      <div class="vc-num" style="{% if adm.status == 'admitted' %}background:var(--teal-glow);color:var(--teal);border-color:var(--teal-border){% endif %}">{{ adm.bed_number }}</div>
+  <div class="visit-card" style="margin-bottom:10px;border-color:{% if adm.status == 'admitted' %}var(--teal-border){% else %}var(--border){% endif %}{% if surg and surg.status == 'underway' %};border-left:3px solid var(--purple){% endif %}">
+
+    <div class="vc-header" onclick="toggleWb('{{ adm.id }}')">
+      <div class="vc-queue" style="{% if adm.status == 'admitted' %}background:var(--teal-light);color:var(--teal);border-color:var(--teal-border){% endif %}">{{ adm.bed_number }}</div>
       <div class="vc-info">
-        <div class="vc-name">{{ adm.patient.display_name }}
-          <span class="badge {% if adm.status == 'admitted' %}b-teal{% elif adm.status == 'paid' %}b-blue{% else %}b-amber{% endif %}">{{ adm.get_status_display }}</span>
-          {% if surg %}<span class="badge" style="background:rgba(124,58,237,.1);color:#7c3aed;border:1px solid rgba(124,58,237,.2);font-size:.62rem">⚕ {{ surg.procedure_name|truncatechars:20 }}</span>{% endif %}
-          {% with active_rx=adm.prescriptions.all %}
-          {% if active_rx %}<span class="badge b-purple">{{ active_rx|length }} Rx</span>{% endif %}
-          {% endwith %}
-          {% with outstanding=adm.payments.all|unpaid_only %}
-          {% if outstanding %}<span class="badge b-amber" style="font-size:.58rem" title="Pending payments">₦ pending</span>{% endif %}
-          {% endwith %}
+        <div class="vc-name">
+          {{ adm.patient.display_name }}
+          <span class="badge {% if adm.status == 'admitted' %}b-teal{% elif adm.status == 'paid' %}b-blue{% else %}b-amber{% endif %}">
+            <span class="badge-dot"></span>{{ adm.get_status_display }}
+          </span>
+          {% if surg %}<span class="badge b-purple">⚕ {{ surg.procedure_name|truncatechars:20 }}</span>{% endif %}
+          {% with active_rx=adm.prescriptions.all %}{% if active_rx %}<span class="badge b-purple">{{ active_rx|length }} Rx</span>{% endif %}{% endwith %}
+          {% with outstanding=adm.payments.all|unpaid_only %}{% if outstanding %}<span class="badge b-amber">₦ Pending</span>{% endif %}{% endwith %}
         </div>
         <div class="vc-meta">
-          {% if adm.patient.date_of_birth %}<span>{{ adm.patient.date_of_birth|age }}yr</span><span>·</span>{% endif %}
-          {% if adm.doctor %}<span>Dr. {{ adm.doctor.get_full_name|default:adm.doctor.username }}</span>{% endif %}
-          {% if adm.admitted_at %}<span>·</span><span>Admitted {{ adm.admitted_at|date:"d M, H:i" }}</span>{% endif %}
-          {% if adm.status == 'admitted' and adm.admitted_at and adm.admission_fee_parts %}<span>·</span><span style="color:var(--amber)">Est. discharge: {{ adm.admitted_at|add_days:adm.admission_fee_parts|date:"d M Y" }}</span>{% endif %}
-          {% if surg %}<span>·</span><span class="txt-xs" style="color:{% if surg.status == 'underway' %}#7c3aed{% elif surg.status == 'pending' %}var(--amber){% else %}var(--text3){% endif %}">Surgery: {{ surg.get_status_display }}</span>{% endif %}
+          {% if adm.patient.date_of_birth %}<span>{{ adm.patient.date_of_birth|age }}yr</span><span class="vc-meta-dot"></span>{% endif %}
+          {% if adm.doctor %}<span>Dr. {{ adm.doctor.get_full_name|default:adm.doctor.username }}</span><span class="vc-meta-dot"></span>{% endif %}
+          {% if adm.admitted_at %}<span>Admitted {{ adm.admitted_at|date:"d M, H:i" }}</span>{% endif %}
+          {% if adm.status == 'admitted' and adm.admitted_at and adm.admission_fee_parts %}
+          <span class="vc-meta-dot"></span>
+          <span style="color:var(--amber)">Est. discharge: {{ adm.admitted_at|add_days:adm.admission_fee_parts|date:"d M Y" }}</span>
+          {% endif %}
+          {% if surg %}<span class="vc-meta-dot"></span><span style="color:{% if surg.status == 'underway' %}var(--purple){% elif surg.status == 'pending' %}var(--amber){% else %}var(--text3){% endif %}">Surgery: {{ surg.get_status_display }}</span>{% endif %}
         </div>
       </div>
-      <div class="ward-actions" onclick="event.stopPropagation()">
+
+      <!-- Action buttons -->
+      <div class="flex items-center gap-2 flex-shrink-0" style="flex-wrap:wrap" onclick="event.stopPropagation()">
         {% if adm.status == 'paid' and user.role == 'nurse' %}
         <button class="btn btn-primary btn-sm" onclick="confirmAdmit({{ adm.id }},this)">Confirm Admit</button>
         {% endif %}
         {% if user.role == 'doctor' %}
         {% if surg and surg.status == 'pending' %}
-        <button class="btn btn-xs" style="background:rgba(124,58,237,.12);color:#7c3aed;border:1px solid rgba(124,58,237,.3)" onclick="toggleSurgery({{ surg.id }},this)">▶ Start Surgery</button>
+        <button class="btn btn-xs b-purple" style="background:var(--purple-light);color:var(--purple);border-color:var(--purple-border)" onclick="toggleSurgery({{ surg.id }},this)">▶ Start Surgery</button>
         {% elif surg and surg.status == 'underway' %}
-        <button class="btn btn-xs btn-teal" onclick="toggleSurgery({{ surg.id }},this)">✓ End Surgery</button>
+        <button class="btn btn-teal btn-xs" onclick="toggleSurgery({{ surg.id }},this)">✓ End Surgery</button>
         {% endif %}
-        <button class="btn btn-ghost btn-sm" onclick="viewPatient({{ adm.patient.id }})">👤 Profile</button>
-        <button class="btn btn-ghost btn-sm" onclick="openWardNote({{ adm.id }},{{ adm.visit.id }})">📝 Note</button>
-        <button class="btn btn-ghost btn-sm" onclick="openWardLab({{ adm.id }},{{ adm.visit.id }})">🔬 Lab</button>
-        <button class="btn btn-primary btn-sm" onclick="openWardRx({{ adm.id }})">💊 Rx</button>
-        <button class="btn btn-purple btn-sm" onclick="openWardSurg({{ adm.id }},{{ adm.visit.id }})">⚕ Surgery</button>
+        <button class="btn btn-surface btn-xs" onclick="viewPatient({{ adm.patient.id }})">👤</button>
+        <button class="btn btn-surface btn-xs" onclick="openWardNote({{ adm.id }},{{ adm.visit.id }})">📝 Note</button>
+        <button class="btn btn-surface btn-xs" onclick="openWardLab({{ adm.id }},{{ adm.visit.id }})">🔬 Lab</button>
+        <button class="btn btn-primary btn-xs" onclick="openWardRx({{ adm.id }})">💊 Rx</button>
+        <button class="btn btn-xs" style="background:var(--purple-light);color:var(--purple);border-color:var(--purple-border)" onclick="openWardSurg({{ adm.id }},{{ adm.visit.id }})">⚕ Surgery</button>
         {% endif %}
-        <button class="btn btn-danger btn-sm" onclick="discharge({{ adm.id }},this)">Discharge</button>
+        <button class="btn btn-danger btn-xs" onclick="discharge({{ adm.id }},this)">Discharge</button>
+        <svg id="wbch{{ adm.id }}" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--text3);transition:transform .2s;flex-shrink:0">
+          <path d="M3 5l4 4 4-4"/>
+        </svg>
       </div>
     </div>
-    <div class="vc-body hidden" id="wb{{ adm.id }}">
-      <div class="g2 mt-2" style="gap:8px;margin-bottom:12px">
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:11px 13px">
-          <div class="txt-xs txt-muted mb-1">PATIENT</div>
-          {% if adm.patient.blood_group %}<span class="badge b-red" style="margin-bottom:5px">{{ adm.patient.blood_group }}</span>{% endif %}
-          {% if adm.patient.allergies %}<div style="font-size:.76rem;color:var(--amber);margin-bottom:4px">⚠ {{ adm.patient.allergies }}</div>{% endif %}
-          {% if adm.patient.phone %}<div class="txt-xs txt-dim">📞 {{ adm.patient.phone }}</div>{% endif %}
-          {% if adm.patient.emergency_contact_name %}<div class="txt-xs txt-dim mt-1">🆘 {{ adm.patient.emergency_contact_name }} · {{ adm.patient.emergency_contact_phone }}</div>{% endif %}
+
+    <!-- Expanded body -->
+    <div class="vc-body" id="wb{{ adm.id }}">
+      <div class="grid cols-2" style="gap:10px;margin-bottom:14px">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:13px">
+          <div class="text-2xs fw-7 text-muted" style="text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Patient</div>
+          {% if adm.patient.blood_group %}<span class="badge b-red" style="margin-bottom:6px">{{ adm.patient.blood_group }}</span> {% endif %}
+          {% if adm.patient.allergies %}<div class="text-xs" style="color:var(--amber);margin-bottom:4px">⚠ {{ adm.patient.allergies }}</div>{% endif %}
+          {% if adm.patient.phone %}<div class="text-xs text-dim">📞 {{ adm.patient.phone }}</div>{% endif %}
+          {% if adm.patient.emergency_contact_name %}<div class="text-xs text-dim mt-1">🆘 {{ adm.patient.emergency_contact_name }} · {{ adm.patient.emergency_contact_phone }}</div>{% endif %}
         </div>
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:11px 13px">
-          <div class="txt-xs txt-muted mb-1">ADMISSION</div>
-          <div class="txt-xs txt-dim">{{ adm.admission_reason|truncatechars:70 }}</div>
-          <div class="txt-xs txt-dim mt-1">₦{{ adm.daily_ward_fee|floatformat:0 }}/day · {{ adm.admission_fee_parts }} day(s) · Total: ₦{{ adm.total_admission_fee|floatformat:0 }}</div>
-          {% if adm.admitted_at and adm.admission_fee_parts %}<div class="txt-xs mt-1"><span class="txt-muted">Admitted:</span> {{ adm.admitted_at|date:"d M Y" }} <span class="txt-muted">· Est. Discharge:</span> <span style="color:var(--amber);font-weight:600">{{ adm.admitted_at|add_days:adm.admission_fee_parts|date:"d M Y" }}</span></div>{% elif adm.created_at and adm.admission_fee_parts and adm.status == 'paid' %}<div class="txt-xs txt-muted mt-1">Est. {{ adm.admission_fee_parts }} day(s) after admission</div>{% endif %}
-          {% if adm.discount_amount %}<div class="txt-xs" style="color:var(--teal)">Discount: ₦{{ adm.discount_amount|floatformat:0 }}</div>{% endif %}
-          {% with outst=adm.payments.all|unpaid_only %}{% if outst %}<div class="txt-xs" style="color:var(--amber);margin-top:4px">⚠ {{ outst|length }} payment(s) still pending</div>{% endif %}{% endwith %}
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:13px">
+          <div class="text-2xs fw-7 text-muted" style="text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Admission</div>
+          <div class="text-xs text-dim">{{ adm.admission_reason|truncatechars:70 }}</div>
+          <div class="text-xs text-dim mt-1 mono">₦{{ adm.daily_ward_fee|floatformat:0 }}/day · {{ adm.admission_fee_parts }} day(s) · Total: ₦{{ adm.total_admission_fee|floatformat:0 }}</div>
+          {% if adm.admitted_at and adm.admission_fee_parts %}
+          <div class="text-xs mt-1">
+            <span class="text-muted">Est. Discharge: </span>
+            <span style="color:var(--amber);font-weight:600">{{ adm.admitted_at|add_days:adm.admission_fee_parts|date:"d M Y" }}</span>
+          </div>
+          {% endif %}
+          {% if adm.discount_amount %}<div class="text-xs text-teal mt-1">Discount: ₦{{ adm.discount_amount|floatformat:0 }}</div>{% endif %}
+          {% with outst=adm.payments.all|unpaid_only %}{% if outst %}<div class="text-xs mt-1" style="color:var(--amber)">⚠ {{ outst|length }} payment(s) pending</div>{% endif %}{% endwith %}
         </div>
       </div>
 
-      {# Surgery section — shown if this admission is linked to a surgery #}
       {% if surg %}
-      <div style="margin-bottom:12px;padding:11px 13px;background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.2);border-radius:var(--r-sm)">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <span style="font-weight:700;font-size:.82rem;color:#7c3aed">⚕ {{ surg.procedure_name }}</span>
-          <span class="badge" style="background:rgba(124,58,237,.12);color:#7c3aed;border:1px solid rgba(124,58,237,.25)">{{ surg.get_status_display }}</span>
+      <div style="padding:13px 15px;background:var(--purple-light);border:1px solid var(--purple-border);border-radius:var(--r-md);margin-bottom:14px">
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <span class="fw-7 text-sm" style="color:var(--purple)">⚕ {{ surg.procedure_name }}</span>
+          <span class="badge b-purple">{{ surg.get_status_display }}</span>
         </div>
-        {% if surg.anesthesia_type %}<div class="txt-xs txt-muted mb-1">Anesthesia: {{ surg.anesthesia_type }}</div>{% endif %}
-        {% if surg.scheduled_at %}<div class="txt-xs txt-muted">Started: {{ surg.scheduled_at|date:"d M H:i" }}</div>{% endif %}
-        {% if surg.completed_at %}<div class="txt-xs txt-muted">Ended: {{ surg.completed_at|date:"d M H:i" }}</div>{% endif %}
-
+        {% if surg.anesthesia_type %}<div class="text-xs text-muted mb-1">Anesthesia: {{ surg.anesthesia_type }}</div>{% endif %}
+        {% if surg.scheduled_at %}<div class="text-xs text-muted">Started: {{ surg.scheduled_at|date:"d M H:i" }}</div>{% endif %}
+        {% if surg.completed_at %}<div class="text-xs text-muted">Ended: {{ surg.completed_at|date:"d M H:i" }}</div>{% endif %}
         {% if surg.surgery_drugs.all %}
-        <div style="margin-top:8px">
-          <div class="txt-xs txt-muted fw-7 mb-1">SURGERY DRUGS <span style="background:rgba(124,58,237,.1);color:#7c3aed;padding:1px 5px;border-radius:3px;font-size:.58rem;font-weight:700">FOR SURGERY</span></div>
-          {% for sd in surg.surgery_drugs.all %}
-          <div class="drug-row" style="border-color:rgba(124,58,237,.15)">
-            <div class="drug-name">{{ sd.drug_name }}{% if sd.drug.strength %} <span class="txt-muted">({{ sd.drug.strength }})</span>{% endif %}{% if sd.drug.dosage_form %} <span class="txt-muted txt-xs">{{ sd.drug.dosage_form }}</span>{% endif %}<span class="drug-sub">×{{ sd.quantity }}{% if sd.dosage %} — {{ sd.dosage }}{% endif %}</span></div>
-            <span class="mono txt-xs">₦{{ sd.price_at_time|floatformat:0 }}</span>
+        <div class="section-label" style="margin-top:10px">Surgery Drugs <span class="badge b-purple">⚕ For Surgery</span></div>
+        {% for sd in surg.surgery_drugs.all %}
+        <div class="drug-row" style="border-color:var(--purple-border)">
+          <div class="drug-name">{{ sd.drug_name }}{% if sd.drug.strength %} <span class="text-muted">({{ sd.drug.strength }})</span>{% endif %}{% if sd.drug.dosage_form %} <span class="text-xs text-muted">{{ sd.drug.dosage_form }}</span>{% endif %}
+            <span class="drug-meta">×{{ sd.quantity }}{% if sd.dosage %} — {{ sd.dosage }}{% endif %}</span>
           </div>
-          {% endfor %}
+          <span class="mono text-xs">₦{{ sd.price_at_time|floatformat:0 }}</span>
         </div>
+        {% endfor %}
         {% endif %}
-
         {% if surg.surgery_labs.all %}
-        <div style="margin-top:8px">
-          <div class="txt-xs txt-muted fw-7 mb-1">SURGERY LAB TESTS <span style="background:rgba(124,58,237,.1);color:#7c3aed;padding:1px 5px;border-radius:3px;font-size:.58rem;font-weight:700">FOR SURGERY</span></div>
-          {% for sl in surg.surgery_labs.all %}
-          <div class="drug-row" style="border-color:rgba(124,58,237,.15)">
-            <div class="drug-name">{{ sl.test_name }}</div>
-            <span class="mono txt-xs">₦{{ sl.price_at_time|floatformat:0 }}</span>
-          </div>
-          {% endfor %}
+        <div class="section-label">Surgery Lab Tests <span class="badge b-purple">⚕ For Surgery</span></div>
+        {% for sl in surg.surgery_labs.all %}
+        <div class="drug-row" style="border-color:var(--purple-border)">
+          <div class="drug-name">{{ sl.test_name }}</div>
+          <span class="mono text-xs">₦{{ sl.price_at_time|floatformat:0 }}</span>
         </div>
+        {% endfor %}
         {% endif %}
       </div>
       {% endif %}
 
       {% if adm.prescriptions.all %}
-      <div class="sl">Active Prescriptions <span style="background:rgba(14,165,160,.1);color:var(--teal);padding:1px 5px;border-radius:3px;font-size:.58rem;font-weight:700">🛏 ADMISSION</span></div>
+      <div class="section-label">Active Prescriptions <span class="badge b-teal">🛏 Admission</span></div>
       {% for rx in adm.prescriptions.all %}{% if rx.status == 'active' %}
-      <div style="background:var(--teal-glow);border:1px solid var(--teal-border);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:7px">
-        <div class="flex justify-b items-c mb-2">
+      <div style="background:var(--teal-light);border:1px solid var(--teal-border);border-radius:var(--r-md);padding:12px;margin-bottom:8px">
+        <div class="flex items-center justify-between mb-2">
           <span class="badge b-teal">Active · {{ rx.created_at|date:"d M, H:i" }}</span>
-          <span class="txt-xs txt-muted">Dr. {{ rx.doctor.get_full_name|default:rx.doctor.username }}</span>
-          {% if user.role == 'doctor' %}<button class="btn btn-danger btn-xs" onclick="voidRx({{ rx.id }},this)">Void</button>{% endif %}
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-muted">Dr. {{ rx.doctor.get_full_name|default:rx.doctor.username }}</span>
+            {% if user.role == 'doctor' %}<button class="btn btn-danger btn-xs" onclick="voidRx({{ rx.id }},this)">Void</button>{% endif %}
+          </div>
         </div>
         {% for item in rx.items.all %}
-        <div class="drug-row" style="background:var(--surface);border-color:var(--border);margin-bottom:4px">
-          <div class="drug-name">{{ item.drug_name }}{% if item.drug.strength %} <span class="txt-muted">({{ item.drug.strength }})</span>{% endif %}
-            <span class="drug-sub">{{ item.dosage }} · ×{{ item.quantity }}{% if item.injection_days %} · 💉 {{ item.injection_days }}d{% endif %}</span>
+        <div class="drug-row" style="background:var(--surface);margin-bottom:4px">
+          <div class="drug-name">{{ item.drug_name }}{% if item.drug.strength %} <span class="text-muted">({{ item.drug.strength }})</span>{% endif %}
+            <span class="drug-meta">{{ item.dosage }} · ×{{ item.quantity }}{% if item.injection_days %} · 💉 {{ item.injection_days }}d{% endif %}</span>
           </div>
-          <span class="mono txt-xs txt-dim">₦{{ item.price|floatformat:0 }}</span>
+          <span class="mono text-xs text-muted">₦{{ item.price|floatformat:0 }}</span>
         </div>
         {% endfor %}
-        {% if rx.notes %}<div class="txt-xs txt-muted mt-1">{{ rx.notes }}</div>{% endif %}
+        {% if rx.notes %}<div class="text-xs text-muted mt-1">{{ rx.notes }}</div>{% endif %}
       </div>
       {% endif %}{% endfor %}
 
       {% for rx in adm.prescriptions.all %}{% if rx.status == 'voided' %}
-      {% if forloop.first %}<div class="sl">Voided Prescriptions</div>{% endif %}
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 12px;margin-bottom:5px;opacity:.5">
-        <div class="flex justify-b items-c mb-1"><span class="badge b-gray">Voided</span><span class="txt-xs txt-muted">{{ rx.created_at|date:"d M" }}</span></div>
-        {% for item in rx.items.all %}<div class="txt-xs txt-dim" style="text-decoration:line-through">{{ item.drug_name }} · ×{{ item.quantity }}</div>{% endfor %}
+      {% if forloop.first %}<div class="section-label">Voided Prescriptions</div>{% endif %}
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:10px;margin-bottom:6px;opacity:.5">
+        <div class="flex items-center justify-between mb-1">
+          <span class="badge b-gray">Voided</span>
+          <span class="text-xs text-muted">{{ rx.created_at|date:"d M" }}</span>
+        </div>
+        {% for item in rx.items.all %}<div class="text-xs text-muted" style="text-decoration:line-through">{{ item.drug_name }} · ×{{ item.quantity }}</div>{% endfor %}
       </div>
       {% endif %}{% endfor %}
       {% endif %}
 
       {% if adm.visit.lab_requests.all %}
-      <div class="sl">Lab Tests</div>
+      <div class="section-label">Lab Tests</div>
       {% for lr in adm.visit.lab_requests.all %}
-      <div style="margin-bottom:8px;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm)">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-          <span style="font-weight:700;font-size:.81rem">Lab #{{ lr.id }}
-            {% if lr.doctor_note|slice:":12" == "Pre-surgery" %}<span style="background:rgba(124,58,237,.1);color:#7c3aed;padding:1px 5px;border-radius:3px;font-size:.58rem;font-weight:700;margin-left:3px">⚕ SURGERY</span>{% elif lr.doctor_note == "Ward patient lab request" %}<span style="background:rgba(14,165,160,.1);color:var(--teal);padding:1px 5px;border-radius:3px;font-size:.58rem;font-weight:700;margin-left:3px">🛏 ADMISSION</span>{% endif %}
+      <div style="padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);margin-bottom:8px">
+        <div class="flex items-center justify-between mb-2">
+          <span class="fw-7 text-sm">
+            Lab #{{ lr.id }}
+            {% if lr.doctor_note|slice:":12" == "Pre-surgery" %}<span class="badge b-purple" style="margin-left:4px">⚕ Surgery</span>{% elif lr.doctor_note == "Ward patient lab request" %}<span class="badge b-teal" style="margin-left:4px">🛏 Admission</span>{% endif %}
           </span>
           <span class="badge {% if lr.status == 'completed' %}b-teal{% elif lr.status == 'in_progress' %}b-blue{% else %}b-amber{% endif %}">{{ lr.get_status_display }}</span>
         </div>
         {% for t in lr.tests.all %}
         <div style="padding:5px 0;border-bottom:1px solid var(--border)">
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            <span class="txt-xs txt-dim">{{ t.test.name }}</span>
-            {% if t.is_completed %}<span class="badge b-teal" style="font-size:.6rem">Done</span>{% else %}<span class="badge b-amber" style="font-size:.6rem">Pending</span>{% endif %}
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-dim">{{ t.test.name }}</span>
+            {% if t.is_completed %}<span class="badge b-teal" style="font-size:.58rem">Done</span>{% else %}<span class="badge b-amber" style="font-size:.58rem">Pending</span>{% endif %}
           </div>
-          {% if t.is_completed and t.result_note %}<div style="margin-top:4px;padding:5px 8px;background:var(--teal-glow);border:1px solid var(--teal-border);border-radius:4px;font-size:.76rem"><span style="font-weight:700;color:var(--teal)">Result: </span>{{ t.result_note }}</div>{% endif %}
+          {% if t.is_completed and t.result_note %}<div style="margin-top:4px;padding:6px 10px;background:var(--teal-light);border:1px solid var(--teal-border);border-radius:var(--r);font-size:.76rem"><span class="fw-7 text-teal">Result: </span>{{ t.result_note }}</div>{% endif %}
         </div>
         {% endfor %}
-        {% if lr.status == 'completed' %}<a href="{% url 'print_lab_results' lr.id %}" target="_blank" class="btn btn-ghost btn-xs mt-1">🖨 Full Report</a>{% endif %}
+        {% if lr.status == 'completed' %}<a href="{% url 'print_lab_results' lr.id %}" target="_blank" class="btn btn-ghost btn-xs mt-2">🖨 Full Report</a>{% endif %}
       </div>
       {% endfor %}
       {% endif %}
@@ -207,325 +218,168 @@
 {% endwith %}
 {% endfor %}
 
-<!-- WARD NOTE MODAL -->
-<div class="overlay" id="wardNoteModal"><div class="modal">
-  <div class="modal-h"><div class="modal-title">Add Ward Note</div><button class="modal-x" onclick="C.modal('wardNoteModal',false)">×</button></div>
-  <div class="modal-b"><input type="hidden" id="wNoteVid">
-    <div class="fg"><label class="lbl">Note</label><textarea class="inp" id="wNoteText" rows="4" placeholder="Progress notes, observations…"></textarea></div>
-  </div>
-  <div class="modal-f"><button class="btn btn-ghost btn-sm" onclick="C.modal('wardNoteModal',false)">Cancel</button><button class="btn btn-primary btn-sm" onclick="submitWardNote()">Save Note</button></div>
-</div></div>
-
-<!-- WARD LAB MODAL -->
-<div class="overlay" id="wardLabModal"><div class="modal modal-lg">
-  <div class="modal-h"><div class="modal-title">Order Lab Tests (Ward)</div><button class="modal-x" onclick="C.modal('wardLabModal',false)">×</button></div>
-  <div class="modal-b">
-    <input type="hidden" id="wLabVid">
-    <div class="fg"><label class="lbl">Search Tests</label>
-      <div class="search-wrap"><input class="inp" id="wLabInp" placeholder="Type or click to browse tests…" autocomplete="off"><div class="search-drop" id="wLabDrop"></div></div>
+<!-- ═══ WARD NOTE MODAL ═══ -->
+<div class="overlay" id="wardNoteModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Add Ward Note</div><button class="modal-close" onclick="R.modal('wardNoteModal',false)">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="wNoteVid">
+      <div class="fg"><label class="label">Note</label><textarea class="inp" id="wNoteText" rows="4" placeholder="Clinical observations, updates…"></textarea></div>
     </div>
-    <div id="wLabList" style="margin-bottom:10px"></div>
-    <div class="fg"><label class="lbl">Lab Attendant</label>
-      <select class="inp" id="wLabAtt"><option value="">— Optional —</option>{% for a in available_lab_attendants %}<option value="{{ a.id }}">{{ a.display_name }}</option>{% endfor %}</select>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="R.modal('wardNoteModal',false)">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitWardNote()">Save Note</button>
     </div>
   </div>
-  <div class="modal-f"><button class="btn btn-ghost btn-sm" onclick="C.modal('wardLabModal',false)">Cancel</button><button class="btn btn-primary btn-sm" onclick="submitWardLab()">Order</button></div>
-</div></div>
+</div>
 
-<!-- WARD RX MODAL -->
-<div class="overlay" id="wardRxModal"><div class="modal modal-lg">
-  <div class="modal-h"><div class="modal-title">Prescribe Medication (Ward)</div><button class="modal-x" onclick="C.modal('wardRxModal',false)">×</button></div>
-  <div class="modal-b">
-    <input type="hidden" id="wRxAdmId">
-    <div class="fg"><label class="lbl">Search Drug</label>
-      <div class="search-wrap"><input class="inp" id="wRxInp" placeholder="Type or click to browse drugs…" autocomplete="off"><div class="search-drop" id="wRxDrop"></div></div>
-    </div>
-    <div id="wRxList" style="margin-bottom:10px"></div>
-    <div class="fg"><label class="lbl">Notes</label><textarea class="inp" id="wRxNotes" rows="2" placeholder="Instructions, frequency notes…"></textarea></div>
-  </div>
-  <div class="modal-f"><button class="btn btn-ghost btn-sm" onclick="C.modal('wardRxModal',false)">Cancel</button><button class="btn btn-primary btn-sm" onclick="submitWardRx()">Prescribe</button></div>
-</div></div>
-
-<!-- WARD SURGERY MODAL -->
-<div class="overlay" id="wardSurgModal"><div class="modal modal-xl">
-  <div class="modal-h"><div class="modal-title">Surgery Consent (Ward Patient)</div><button class="modal-x" onclick="C.modal('wardSurgModal',false)">×</button></div>
-  <div class="modal-b">
-    <input type="hidden" id="wSurgVid">
-    <div class="alert a-info mb-2" style="font-size:.78rem">Patient is already admitted — no new admission will be created.</div>
-    <div class="g2">
-      <div class="fg span2"><label class="lbl">Procedure Name <span style="color:var(--red)">*</span></label><input class="inp" id="wSurgName" placeholder="e.g. Appendectomy…"></div>
-      <div class="fg"><label class="lbl">Anesthesia</label><input class="inp" id="wSurgAnes" placeholder="General / Local / Spinal"></div>
-      <div class="fg span2"><label class="lbl">Purpose & Benefits</label><textarea class="inp" id="wSurgPurpose" rows="2"></textarea></div>
-      <div class="fg span2"><label class="lbl">Known Risks</label><textarea class="inp" id="wSurgRisks" rows="2"></textarea></div>
-      <div class="fg span2"><label class="lbl">Alternatives</label><textarea class="inp" id="wSurgAlts" rows="1"></textarea></div>
-      <div class="fg span2"><label class="lbl">Post-Op Instructions</label><textarea class="inp" id="wSurgPostop" rows="2"></textarea></div>
-    </div>
-    <div class="sl">Required Drugs <span class="txt-muted" style="text-transform:none;font-weight:400;letter-spacing:0;font-size:.72rem">(optional — patient pays in full)</span></div>
-    <div class="fg">
-      <div class="search-wrap"><input class="inp" id="wSurgDrugInp" placeholder="Search drug…" autocomplete="off"><div class="search-drop" id="wSurgDrugDrop"></div></div>
-    </div>
-    <div id="wSurgDrugList"></div>
-    <div class="sl">Required Lab Tests <span class="txt-muted" style="text-transform:none;font-weight:400;letter-spacing:0;font-size:.72rem">(optional — patient pays in full)</span></div>
-    <div class="fg">
-      <div class="search-wrap"><input class="inp" id="wSurgTestInp" placeholder="Search test…" autocomplete="off"><div class="search-drop" id="wSurgTestDrop"></div></div>
-    </div>
-    <div id="wSurgTestList"></div>
-    <div class="sl">Surgery Fee & Payment Plan</div>
-    <div class="g2">
-      <div class="fg"><label class="lbl">Surgery Fee ₦ <span style="color:var(--red)">*</span></label><input class="inp" type="number" id="wSurgFee" placeholder="0.00" oninput="renderWSurgParts()"></div>
-      <div class="fg"><label class="lbl">Split into parts <span class="txt-muted" style="text-transform:none;font-weight:400">(1–5)</span></label>
-        <select class="inp" id="wSurgParts" onchange="renderWSurgParts()">
-          <option value="1">1 — Full payment</option>
-          <option value="2">2 parts</option>
-          <option value="3">3 parts</option>
-          <option value="4">4 parts</option>
-          <option value="5">5 parts</option>
+<!-- ═══ WARD LAB MODAL ═══ -->
+<div class="overlay" id="wardLabModal">
+  <div class="modal modal-lg">
+    <div class="modal-header"><div class="modal-title">Order Lab Tests (Ward)</div><button class="modal-close" onclick="R.modal('wardLabModal',false)">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="wLabVid">
+      <div class="fg">
+        <label class="label">Lab Scientist</label>
+        <select class="inp" id="wLabAtt">
+          <option value="">— Unassigned —</option>
+          {% for att in lab_attendants %}<option value="{{ att.id }}">{{ att.display_name }}{% if att.is_available %} ✓{% endif %}</option>{% endfor %}
         </select>
       </div>
+      <div class="fg">
+        <label class="label">Search Tests</label>
+        <div class="search-wrap">
+          <input class="inp" id="wLabInp" placeholder="Search lab tests…" autocomplete="off">
+          <div class="search-drop" id="wLabDrop"></div>
+        </div>
+      </div>
+      <div id="wLabList"></div>
     </div>
-    <div id="wSurgPartsList"></div>
-    <div class="sl">Authorisations</div>
-    <div class="g2" style="gap:7px">
-      <label style="display:flex;align-items:center;gap:7px;font-size:.8rem;cursor:pointer"><input type="checkbox" id="wsAddProc"> Additional procedures if necessary</label>
-      <label style="display:flex;align-items:center;gap:7px;font-size:.8rem;cursor:pointer"><input type="checkbox" id="wsTissue"> Tissue disposal authorised</label>
-      <label style="display:flex;align-items:center;gap:7px;font-size:.8rem;cursor:pointer"><input type="checkbox" id="wsResidents"> Residents may participate</label>
-      <label style="display:flex;align-items:center;gap:7px;font-size:.8rem;cursor:pointer"><input type="checkbox" id="wsPhoto"> Photography permitted</label>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="R.modal('wardLabModal',false)">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitWardLab()">Order</button>
     </div>
   </div>
-  <div class="modal-f"><button class="btn btn-ghost btn-sm" onclick="C.modal('wardSurgModal',false)">Cancel</button><button class="btn btn-purple btn-sm" onclick="submitWardSurg()">Send to Patient →</button></div>
-</div></div>
+</div>
 
-<!-- PATIENT PROFILE MODAL -->
-<div class="overlay" id="ptProfileModal"><div class="modal modal-lg">
-  <div class="modal-h"><div class="modal-title" id="ptProfileTitle">Patient Profile</div><button class="modal-x" onclick="C.modal('ptProfileModal',false)">×</button></div>
-  <div class="modal-b" id="ptProfileBody" style="min-height:200px;display:flex;align-items:center;justify-content:center">
-    <span style="color:var(--text3);font-size:.85rem">Loading…</span>
+<!-- ═══ WARD RX MODAL ═══ -->
+<div class="overlay" id="wardRxModal">
+  <div class="modal modal-lg">
+    <div class="modal-header"><div class="modal-title">Prescribe Medication (Ward)</div><button class="modal-close" onclick="R.modal('wardRxModal',false)">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="wRxAdmId">
+      <div class="fg">
+        <label class="label">Search Drugs</label>
+        <div class="search-wrap">
+          <input class="inp" id="wRxInp" placeholder="Search drugs…" autocomplete="off">
+          <div class="search-drop" id="wRxDrop"></div>
+        </div>
+      </div>
+      <div id="wRxList" style="margin-bottom:10px"></div>
+      <div class="fg" style="margin-bottom:0">
+        <label class="label">Notes</label>
+        <input class="inp" id="wRxNotes" placeholder="Optional notes">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="R.modal('wardRxModal',false)">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitWardRx()">Prescribe</button>
+    </div>
   </div>
-</div></div>
+</div>
+
+<!-- ═══ WARD SURGERY MODAL ═══ -->
+<div class="overlay" id="wardSurgModal">
+  <div class="modal modal-xl">
+    <div class="modal-header"><div class="modal-title">Surgery Consent (Ward Patient)</div><button class="modal-close" onclick="R.modal('wardSurgModal',false)">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="wSurgVid">
+      <div class="grid cols-2" style="gap:14px">
+        <div>
+          <div class="fg"><label class="label">Procedure Name <span class="label-req">*</span></label><input class="inp" id="wSurgName" placeholder="e.g. Appendectomy"></div>
+          <div class="fg"><label class="label">Anesthesia Type</label><input class="inp" id="wSurgAnes" placeholder="e.g. General, Spinal"></div>
+          <div class="fg"><label class="label">Purpose &amp; Benefits</label><textarea class="inp" id="wSurgPurpose" rows="2"></textarea></div>
+          <div class="fg"><label class="label">Known Risks</label><textarea class="inp" id="wSurgRisks" rows="2"></textarea></div>
+          <div class="fg"><label class="label">Alternative Treatments</label><textarea class="inp" id="wSurgAlts" rows="2"></textarea></div>
+          <div class="fg"><label class="label">Post-op Instructions</label><textarea class="inp" id="wSurgPostop" rows="2"></textarea></div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <label class="flex items-center gap-2 text-sm" style="cursor:pointer"><input type="checkbox" id="wsAddProc"> Additional procedures if required</label>
+            <label class="flex items-center gap-2 text-sm" style="cursor:pointer"><input type="checkbox" id="wsTissue"> Tissue/specimen disposal consent</label>
+            <label class="flex items-center gap-2 text-sm" style="cursor:pointer"><input type="checkbox" id="wsResidents"> Residents/trainees may be involved</label>
+            <label class="flex items-center gap-2 text-sm" style="cursor:pointer"><input type="checkbox" id="wsPhoto"> Photography/recording permitted</label>
+          </div>
+        </div>
+        <div>
+          <div class="fg"><label class="label">Surgery Fee (₦) <span class="label-req">*</span></label><input class="inp mono" id="wSurgFee" type="number" placeholder="0" oninput="renderWSurgParts()"></div>
+          <div class="fg"><label class="label">Instalments</label><input class="inp mono" id="wSurgParts" type="number" value="1" min="1" oninput="renderWSurgParts()"></div>
+          <div id="wSurgPartsList" style="margin-bottom:12px"></div>
+          <div class="section-label">Pre-Surgery Drugs</div>
+          <div class="search-wrap mb-2"><input class="inp" id="wSurgDrugInp" placeholder="Search drugs…" autocomplete="off"><div class="search-drop" id="wSurgDrugDrop"></div></div>
+          <div id="wSurgDrugList" style="margin-bottom:12px"></div>
+          <div class="section-label">Pre-Surgery Lab Tests</div>
+          <div class="search-wrap mb-2"><input class="inp" id="wSurgTestInp" placeholder="Search tests…" autocomplete="off"><div class="search-drop" id="wSurgTestDrop"></div></div>
+          <div id="wSurgTestList"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="R.modal('wardSurgModal',false)">Cancel</button>
+      <button class="btn btn-sm" style="background:var(--purple);color:#fff;border-color:var(--purple)" onclick="submitWardSurg()">Send to Patient →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PATIENT PROFILE MODAL ═══ -->
+<div class="overlay" id="ptProfileModal">
+  <div class="modal modal-lg">
+    <div class="modal-header"><div class="modal-title" id="ptProfileTitle">Patient Profile</div><button class="modal-close" onclick="R.modal('ptProfileModal',false)">✕</button></div>
+    <div class="modal-body" id="ptProfileBody" style="min-height:200px;display:flex;align-items:center;justify-content:center">
+      <span class="text-muted text-sm">Loading…</span>
+    </div>
+  </div>
+</div>
 
 {% endblock %}
 
 {% block js %}
 <script>
-async function confirmAdmit(id,btn){
-  const r=await C.post(`/api/admit-ward-patient/${id}/`);
-  if(r.status==='ok'){C.toast('Patient admitted to ward','ok');location.reload();}
-  else C.toast(r.error,'err');
+function toggleWb(id){
+  const body = document.getElementById('wb'+id);
+  const ch = document.getElementById('wbch'+id);
+  const open = body.classList.toggle('open');
+  if(ch) ch.style.transform = open ? 'rotate(180deg)' : '';
 }
-async function toggleSurgery(id,btn){
-  btn.disabled=true;
-  const r=await C.post(`/records/api/surgery-toggle/${id}/`);
-  if(r.status==='ok'){C.toast(r.display,'ok');setTimeout(()=>location.reload(),600);}
-  else{btn.disabled=false;C.toast(r.error||'Error','err');}
-}
-async function discharge(id,btn){
-  if(!confirm('Discharge this patient from the ward?'))return;
-  btn.disabled=true;
-  const r=await C.post(`/api/discharge-patient/${id}/`);
-  if(r.status==='ok'){C.toast('Patient discharged','ok');btn.closest('.vc').remove();}
-  else{btn.disabled=false;C.toast(r.error||'Error','err');}
-}
-async function voidRx(id,btn){
-  if(!confirm('Void this prescription?'))return;
-  const r=await C.post(`/api/void-admission-rx/${id}/`);
-  if(r.status==='ok'){C.toast('Voided','ok');location.reload();}
-  else C.toast(r.error,'err');
-}
+
+async function confirmAdmit(id,btn){const r=await R.post(`/api/admit-ward-patient/${id}/`);if(r.status==='ok'){R.toast('Patient admitted to ward','ok');location.reload();}else R.toast(r.error,'err');}
+async function toggleSurgery(id,btn){btn.disabled=true;const r=await R.post(`/records/api/surgery-toggle/${id}/`);if(r.status==='ok'){R.toast(r.display,'ok');setTimeout(()=>location.reload(),600);}else{btn.disabled=false;R.toast(r.error||'Error','err');}}
+async function discharge(id,btn){if(!confirm('Discharge this patient from the ward?'))return;btn.disabled=true;const r=await R.post(`/api/discharge-patient/${id}/`);if(r.status==='ok'){R.toast('Patient discharged','ok');btn.closest('.visit-card').remove();}else{btn.disabled=false;R.toast(r.error||'Error','err');}}
+async function voidRx(id,btn){if(!confirm('Void this prescription?'))return;const r=await R.post(`/api/void-admission-rx/${id}/`);if(r.status==='ok'){R.toast('Voided','ok');location.reload();}else R.toast(r.error,'err');}
 
 // Ward Note
-function openWardNote(admId,vid){document.getElementById('wNoteVid').value=vid;document.getElementById('wNoteText').value='';C.modal('wardNoteModal');}
-async function submitWardNote(){
-  const vid=document.getElementById('wNoteVid').value;
-  const note=document.getElementById('wNoteText').value.trim();
-  if(!note){C.toast('Enter a note','err');return;}
-  const r=await C.post(`/records/api/note/${vid}/`,{note});
-  if(r.status==='ok'){C.toast('Note saved','ok');C.modal('wardNoteModal',false);}
-  else C.toast(r.error,'err');
-}
+function openWardNote(admId,vid){document.getElementById('wNoteVid').value=vid;document.getElementById('wNoteText').value='';R.modal('wardNoteModal');}
+async function submitWardNote(){const vid=document.getElementById('wNoteVid').value;const note=document.getElementById('wNoteText').value.trim();if(!note){R.toast('Enter a note','err');return;}const r=await R.post(`/records/api/note/${vid}/`,{note});if(r.status==='ok'){R.toast('Note saved','ok');R.modal('wardNoteModal',false);}else R.toast(r.error,'err');}
 
 // Ward Lab
-let wLabTests=[], _wLabSearch=null;
-function openWardLab(admId,vid){
-  wLabTests=[];renderWLab();
-  document.getElementById('wLabVid').value=vid;
-  C.modal('wardLabModal');
-  if(!_wLabSearch){
-    _wLabSearch=mkTestSearch('wLabInp','wLabDrop',t=>{
-      if(!wLabTests.find(x=>x.id===t.id)){wLabTests.push({...t,note:''});renderWLab();}
-    });
-  }
-  setTimeout(()=>_wLabSearch&&_wLabSearch.open(),80);
-}
-function renderWLab(){
-  document.getElementById('wLabList').innerHTML=wLabTests.length?wLabTests.map((t,i)=>`
-    <div class="drug-row">
-      <div class="drug-name">${t.name}<span class="drug-sub">${t.category||''} · ₦${Number(t.price).toLocaleString()}</span></div>
-      <button class="btn btn-danger btn-xs" onclick="wLabTests.splice(${i},1);renderWLab()">×</button>
-    </div>`).join(''):'';
-}
-async function submitWardLab(){
-  const vid=document.getElementById('wLabVid').value;
-  if(!wLabTests.length){C.toast('Add at least one test','err');return;}
-  const fd=new FormData();fd.append('csrfmiddlewaretoken',C.csrf());
-  fd.append('lab_attendant_id',document.getElementById('wLabAtt').value);
-  fd.append('note','Ward patient lab request');
-  wLabTests.forEach(t=>{fd.append('test_ids[]',t.id);fd.append('test_notes[]','');});
-  const r=await fetch(`/records/api/order-lab/${vid}/`,{method:'POST',body:fd});
-  const res=await r.json();
-  if(res.status==='ok'){C.toast('Lab ordered!','ok');C.modal('wardLabModal',false);}
-  else C.toast(res.error,'err');
-}
+let wLabTests=[],_wLabSearch=null;
+function openWardLab(admId,vid){wLabTests=[];renderWLab();document.getElementById('wLabVid').value=vid;R.modal('wardLabModal');if(!_wLabSearch)_wLabSearch=mkTestSearch('wLabInp','wLabDrop',t=>{if(!wLabTests.find(x=>x.id===t.id)){wLabTests.push({...t,note:''});renderWLab();}});setTimeout(()=>_wLabSearch&&_wLabSearch.open(),80);}
+function renderWLab(){document.getElementById('wLabList').innerHTML=wLabTests.length?wLabTests.map((t,i)=>`<div class="drug-row"><div class="drug-name">${t.name}<span class="drug-meta">${t.category||''} · ₦${Number(t.price).toLocaleString()}</span></div><button class="drug-remove" onclick="wLabTests.splice(${i},1);renderWLab()">✕</button></div>`).join(''):'';}
+async function submitWardLab(){const vid=document.getElementById('wLabVid').value;if(!wLabTests.length){R.toast('Add at least one test','err');return;}const fd=new FormData();fd.append('csrfmiddlewaretoken',R.csrf());fd.append('lab_attendant_id',document.getElementById('wLabAtt').value);fd.append('note','Ward patient lab request');wLabTests.forEach(t=>{fd.append('test_ids[]',t.id);fd.append('test_notes[]','');});const r=await fetch(`/records/api/order-lab/${vid}/`,{method:'POST',body:fd});const res=await r.json();if(res.status==='ok'){R.toast('Lab ordered!','ok');R.modal('wardLabModal',false);}else R.toast(res.error,'err');}
 
 // Ward Rx
-let wRxDrugs=[];
-let _wRxSearch=null;
-function openWardRx(admId){
-  wRxDrugs=[];renderWRx();
-  document.getElementById('wRxAdmId').value=admId;
-  document.getElementById('wRxNotes').value='';
-  C.modal('wardRxModal');
-  if(!_wRxSearch){
-    _wRxSearch=mkDrugSearch('wRxInp','wRxDrop',d=>{
-      if(!wRxDrugs.find(x=>x.id===d.id)){wRxDrugs.push({...d,qty:1,dosage:''});renderWRx();}
-    });
-  }
-  setTimeout(()=>_wRxSearch&&_wRxSearch.open(),80);
-}
-function renderWRx(){
-  document.getElementById('wRxList').innerHTML=wRxDrugs.length?wRxDrugs.map((d,i)=>`
-    <div class="drug-row" style="flex-wrap:wrap;gap:5px">
-      <div class="drug-name" style="min-width:120px">${d.name}${d.strength?` <span class="txt-muted">(${d.strength})</span>`:''}<span class="drug-sub">${d.form||''} · ₦${Number(d.price).toLocaleString()}</span></div>
-      <input class="inp" style="width:58px;flex-shrink:0" type="number" value="${d.qty}" min="1" oninput="wRxDrugs[${i}].qty=+this.value">
-      <input class="inp" style="flex:1;min-width:120px" placeholder="Dosage/frequency" value="${d.dosage}" oninput="wRxDrugs[${i}].dosage=this.value">
-      <button class="btn btn-danger btn-xs" onclick="wRxDrugs.splice(${i},1);renderWRx()">×</button>
-    </div>`).join(''):'';
-}
-async function submitWardRx(){
-  const admId=document.getElementById('wRxAdmId').value;
-  if(!wRxDrugs.length){C.toast('Add at least one drug','err');return;}
-  const fd=new FormData();fd.append('csrfmiddlewaretoken',C.csrf());
-  fd.append('notes',document.getElementById('wRxNotes').value);
-  wRxDrugs.forEach(d=>{fd.append('drug_ids[]',d.id);fd.append('dosages[]',d.dosage||'');fd.append('quantities[]',d.qty||1);});
-  const r=await fetch(`/api/add-admission-rx/${admId}/`,{method:'POST',body:fd});
-  const res=await r.json();
-  if(res.status==='ok'){C.toast('Prescription added','ok');C.modal('wardRxModal',false);location.reload();}
-  else C.toast(res.error,'err');
-}
+let wRxDrugs=[],_wRxSearch=null;
+function openWardRx(admId){wRxDrugs=[];renderWRx();document.getElementById('wRxAdmId').value=admId;document.getElementById('wRxNotes').value='';R.modal('wardRxModal');if(!_wRxSearch)_wRxSearch=mkDrugSearch('wRxInp','wRxDrop',d=>{if(!wRxDrugs.find(x=>x.id===d.id)){wRxDrugs.push({...d,qty:1,dosage:''});renderWRx();}});setTimeout(()=>_wRxSearch&&_wRxSearch.open(),80);}
+function renderWRx(){document.getElementById('wRxList').innerHTML=wRxDrugs.length?wRxDrugs.map((d,i)=>`<div class="drug-row" style="flex-wrap:wrap;gap:5px"><div class="drug-name" style="min-width:120px">${d.name}${d.strength?` <span class="text-muted">(${d.strength})</span>`:''}<span class="drug-meta">${d.form||''} · ₦${Number(d.price).toLocaleString()}</span></div><input class="inp" style="width:58px;flex-shrink:0" type="number" value="${d.qty}" min="1" oninput="wRxDrugs[${i}].qty=+this.value"><input class="inp" style="flex:1;min-width:120px" placeholder="Dosage/frequency" value="${d.dosage}" oninput="wRxDrugs[${i}].dosage=this.value"><button class="drug-remove" onclick="wRxDrugs.splice(${i},1);renderWRx()">✕</button></div>`).join(''):'';}
+async function submitWardRx(){const admId=document.getElementById('wRxAdmId').value;if(!wRxDrugs.length){R.toast('Add at least one drug','err');return;}const fd=new FormData();fd.append('csrfmiddlewaretoken',R.csrf());fd.append('notes',document.getElementById('wRxNotes').value);wRxDrugs.forEach(d=>{fd.append('drug_ids[]',d.id);fd.append('dosages[]',d.dosage||'');fd.append('quantities[]',d.qty||1);});const r=await fetch(`/api/add-admission-rx/${admId}/`,{method:'POST',body:fd});const res=await r.json();if(res.status==='ok'){R.toast('Prescription added','ok');R.modal('wardRxModal',false);location.reload();}else R.toast(res.error,'err');}
 
 // Ward Surgery
 let wSurgDrugs=[],wSurgTests=[],_wSurgDrugSearch=null,_wSurgTestSearch=null;
+function renderWSurgParts(){const parts=+document.getElementById('wSurgParts')?.value||1;const fee=+document.getElementById('wSurgFee')?.value||0;const perPart=parts>0?+(fee/parts).toFixed(2):fee;const list=document.getElementById('wSurgPartsList');if(!list)return;if(parts<=1){list.innerHTML='';return;}list.innerHTML=Array.from({length:parts},(_,i)=>`<div class="drug-row" style="margin-bottom:5px"><div class="drug-name">Part ${i+1}</div><input class="inp mono" style="width:130px;flex-shrink:0" type="number" id="wSurgPart${i}" value="${perPart}"></div>`).join('');}
+function renderWSurgDrugs(){document.getElementById('wSurgDrugList').innerHTML=wSurgDrugs.length?wSurgDrugs.map((d,i)=>`<div class="drug-row"><div class="drug-name">${d.name}${d.strength?` (${d.strength})`:''}<span class="drug-meta">₦${Number(d.price).toLocaleString()}</span></div><input class="inp" style="width:52px;flex-shrink:0" type="number" value="${d.qty}" min="1" oninput="wSurgDrugs[${i}].qty=+this.value"><input class="inp" style="flex:1;min-width:90px" placeholder="Dosage" value="${d.dosage||''}" oninput="wSurgDrugs[${i}].dosage=this.value"><button class="drug-remove" onclick="wSurgDrugs.splice(${i},1);renderWSurgDrugs()">✕</button></div>`).join(''):'<div class="text-xs text-muted" style="padding:4px 0">No drugs added.</div>';}
+function renderWSurgTests(){document.getElementById('wSurgTestList').innerHTML=wSurgTests.length?wSurgTests.map((t,i)=>`<div class="drug-row"><div class="drug-name">${t.name}<span class="drug-meta">${t.category||''} · ₦${Number(t.price).toLocaleString()}</span></div><button class="drug-remove" onclick="wSurgTests.splice(${i},1);renderWSurgTests()">✕</button></div>`).join(''):'<div class="text-xs text-muted" style="padding:4px 0">No tests added.</div>';}
+function openWardSurg(admId,vid){wSurgDrugs=[];wSurgTests=[];renderWSurgDrugs();renderWSurgTests();document.getElementById('wSurgVid').value=vid;['wSurgName','wSurgFee','wSurgAnes','wSurgPurpose','wSurgRisks','wSurgAlts','wSurgPostop'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});document.getElementById('wSurgParts').value='1';document.getElementById('wSurgPartsList').innerHTML='';R.modal('wardSurgModal');if(!_wSurgDrugSearch)_wSurgDrugSearch=mkDrugSearch('wSurgDrugInp','wSurgDrugDrop',d=>{if(!wSurgDrugs.find(x=>x.id===d.id)){wSurgDrugs.push({...d,qty:1,dosage:''});renderWSurgDrugs();}});if(!_wSurgTestSearch)_wSurgTestSearch=mkTestSearch('wSurgTestInp','wSurgTestDrop',t=>{if(!wSurgTests.find(x=>x.id===t.id)){wSurgTests.push({...t});renderWSurgTests();}});}
+async function submitWardSurg(){const vid=document.getElementById('wSurgVid').value;const name=document.getElementById('wSurgName').value.trim();const fee=document.getElementById('wSurgFee').value;if(!name||!fee){R.toast('Procedure name and fee required','err');return;}const surgParts=+document.getElementById('wSurgParts').value||1;const fd=new FormData();fd.append('csrfmiddlewaretoken',R.csrf());fd.append('procedure_name',name);fd.append('surgery_fee',fee);fd.append('surg_parts',surgParts);for(let i=0;i<surgParts;i++){const el=document.getElementById('wSurgPart'+i);if(el)fd.append('surg_part_amounts[]',el.value||0);}fd.append('anesthesia_type',document.getElementById('wSurgAnes').value);fd.append('purpose_and_benefits',document.getElementById('wSurgPurpose').value);fd.append('known_risks',document.getElementById('wSurgRisks').value);fd.append('alternative_treatments',document.getElementById('wSurgAlts').value);fd.append('postop_instructions',document.getElementById('wSurgPostop').value);fd.append('additional_procedures_auth',document.getElementById('wsAddProc').checked?'1':'0');fd.append('tissue_disposal_auth',document.getElementById('wsTissue').checked?'1':'0');fd.append('residents_involved',document.getElementById('wsResidents').checked?'1':'0');fd.append('photography_permitted',document.getElementById('wsPhoto').checked?'1':'0');fd.append('blood_transfusion_consent','na');wSurgDrugs.forEach(d=>{fd.append('surg_drug_ids[]',d.id);fd.append('surg_drug_dosages[]',d.dosage||'');fd.append('surg_drug_quantities[]',d.qty||1);});wSurgTests.forEach(t=>{fd.append('surg_test_ids[]',t.id);});const r=await fetch(`/records/api/surgery/${vid}/`,{method:'POST',body:fd});const res=await r.json();if(res.status==='ok'){R.toast('Surgery form sent to patient','ok');R.modal('wardSurgModal',false);}else R.toast(res.error,'err');}
 
-function renderWSurgParts(){
-  const parts=+document.getElementById('wSurgParts')?.value||1;
-  const fee=+document.getElementById('wSurgFee')?.value||0;
-  const perPart=parts>0?+(fee/parts).toFixed(2):fee;
-  const list=document.getElementById('wSurgPartsList');
-  if(!list)return;
-  if(parts<=1){list.innerHTML='';return;}
-  list.innerHTML=Array.from({length:parts},(_,i)=>`
-    <div class="drug-row" style="margin-bottom:5px">
-      <div class="drug-name">Part ${i+1}</div>
-      <input class="inp" style="width:130px;flex-shrink:0;font-family:monospace" type="number" id="wSurgPart${i}" value="${perPart}" placeholder="₦${perPart.toLocaleString()}">
-    </div>`).join('');
-}
-function renderWSurgDrugs(){
-  document.getElementById('wSurgDrugList').innerHTML=wSurgDrugs.length?wSurgDrugs.map((d,i)=>`
-    <div class="drug-row">
-      <div class="drug-name">${d.name}${d.strength?` (${d.strength})`:''}<span class="drug-sub">₦${Number(d.price).toLocaleString()}</span></div>
-      <input class="inp" style="width:52px;flex-shrink:0" type="number" value="${d.qty}" min="1" oninput="wSurgDrugs[${i}].qty=+this.value">
-      <input class="inp" style="flex:1;min-width:90px" placeholder="Dosage" value="${d.dosage||''}" oninput="wSurgDrugs[${i}].dosage=this.value">
-      <button class="btn btn-danger btn-xs" onclick="wSurgDrugs.splice(${i},1);renderWSurgDrugs()">×</button>
-    </div>`).join(''):'<div class="txt-xs txt-muted" style="padding:4px 0">No drugs added.</div>';
-}
-function renderWSurgTests(){
-  document.getElementById('wSurgTestList').innerHTML=wSurgTests.length?wSurgTests.map((t,i)=>`
-    <div class="drug-row">
-      <div class="drug-name">${t.name}<span class="drug-sub">${t.category||''} · ₦${Number(t.price).toLocaleString()}</span></div>
-      <button class="btn btn-danger btn-xs" onclick="wSurgTests.splice(${i},1);renderWSurgTests()">×</button>
-    </div>`).join(''):'<div class="txt-xs txt-muted" style="padding:4px 0">No tests added.</div>';
-}
-
-function openWardSurg(admId,vid){
-  wSurgDrugs=[];wSurgTests=[];renderWSurgDrugs();renderWSurgTests();
-  document.getElementById('wSurgVid').value=vid;
-  document.getElementById('wSurgName').value='';
-  document.getElementById('wSurgFee').value='';
-  document.getElementById('wSurgParts').value='1';
-  document.getElementById('wSurgPartsList').innerHTML='';
-  C.modal('wardSurgModal');
-  if(!_wSurgDrugSearch){
-    _wSurgDrugSearch=mkDrugSearch('wSurgDrugInp','wSurgDrugDrop',d=>{
-      if(!wSurgDrugs.find(x=>x.id===d.id)){wSurgDrugs.push({...d,qty:1,dosage:''});renderWSurgDrugs();}
-    });
-  }
-  if(!_wSurgTestSearch){
-    _wSurgTestSearch=mkTestSearch('wSurgTestInp','wSurgTestDrop',t=>{
-      if(!wSurgTests.find(x=>x.id===t.id)){wSurgTests.push({...t});renderWSurgTests();}
-    });
-  }
-}
-async function submitWardSurg(){
-  const vid=document.getElementById('wSurgVid').value;
-  const name=document.getElementById('wSurgName').value.trim();
-  const fee=document.getElementById('wSurgFee').value;
-  if(!name||!fee){C.toast('Procedure name and fee required','err');return;}
-  const surgParts=+document.getElementById('wSurgParts').value||1;
-  const fd=new FormData();fd.append('csrfmiddlewaretoken',C.csrf());
-  fd.append('procedure_name',name);fd.append('surgery_fee',fee);
-  fd.append('surg_parts',surgParts);
-  for(let i=0;i<surgParts;i++){const el=document.getElementById('wSurgPart'+i);if(el)fd.append('surg_part_amounts[]',el.value||0);}
-  fd.append('anesthesia_type',document.getElementById('wSurgAnes').value);
-  fd.append('purpose_and_benefits',document.getElementById('wSurgPurpose').value);
-  fd.append('known_risks',document.getElementById('wSurgRisks').value);
-  fd.append('alternative_treatments',document.getElementById('wSurgAlts').value);
-  fd.append('postop_instructions',document.getElementById('wSurgPostop').value);
-  fd.append('additional_procedures_auth',document.getElementById('wsAddProc').checked?'1':'0');
-  fd.append('tissue_disposal_auth',document.getElementById('wsTissue').checked?'1':'0');
-  fd.append('residents_involved',document.getElementById('wsResidents').checked?'1':'0');
-  fd.append('photography_permitted',document.getElementById('wsPhoto').checked?'1':'0');
-  fd.append('blood_transfusion_consent','na');
-  wSurgDrugs.forEach(d=>{fd.append('surg_drug_ids[]',d.id);fd.append('surg_drug_dosages[]',d.dosage||'');fd.append('surg_drug_quantities[]',d.qty||1);});
-  wSurgTests.forEach(t=>{fd.append('surg_test_ids[]',t.id);});
-  const r=await fetch(`/records/api/surgery/${vid}/`,{method:'POST',body:fd});
-  const res=await r.json();
-  if(res.status==='ok'){C.toast('Surgery form sent to patient','ok');C.modal('wardSurgModal',false);}
-  else C.toast(res.error,'err');
-}
-
-
-async function viewPatient(pid){
-  C.modal('ptProfileModal');
-  document.getElementById('ptProfileBody').innerHTML='<span style="color:var(--text3);font-size:.85rem">Loading…</span>';
-  try{
-    const r=await fetch(`/api/patient-profile/${pid}/`);
-    const data=await r.json();
-    if(data.status!=='ok'){document.getElementById('ptProfileBody').innerHTML='<span style="color:var(--red)">Failed to load</span>';return;}
-    const p=data.patient;
-    document.getElementById('ptProfileTitle').textContent=p.name+' — Profile';
-    document.getElementById('ptProfileBody').innerHTML=`
-      <div class="g2" style="gap:10px;margin-bottom:10px">
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px">
-          <div class="sl" style="margin-top:0">Personal</div>
-          ${p.dob?'<div class="txt-sm"><span class="txt-muted">DOB: </span>'+p.dob+'</div>':''}
-          ${p.gender?'<div class="txt-sm"><span class="txt-muted">Gender: </span>'+p.gender+'</div>':''}
-          ${p.phone?'<div class="txt-sm"><span class="txt-muted">Phone: </span>'+p.phone+'</div>':''}
-        </div>
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px">
-          <div class="sl" style="margin-top:0">Clinical</div>
-          ${p.blood_group?'<span class="badge b-red" style="margin-bottom:6px">'+p.blood_group+'</span> ':''}
-          ${p.genotype?'<span class="badge b-amber" style="margin-bottom:6px">'+p.genotype+'</span>':''}
-          ${p.allergies?'<div class="txt-sm mt-1" style="color:var(--amber)">⚠ '+p.allergies+'</div>':'<div class="txt-xs txt-muted">No known allergies</div>'}
-        </div>
-      </div>
-      ${p.medical_history?'<div class="fg mb-2"><div class="lbl">Medical History</div><div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:9px;font-size:.81rem">'+p.medical_history+'</div></div>':''}
-      ${p.current_medications?'<div class="fg mb-2"><div class="lbl">Current Medications</div><div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:9px;font-size:.81rem">'+p.current_medications+'</div></div>':''}
-      ${p.surgical_history?'<div class="fg mb-2"><div class="lbl">Surgical History</div><div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:9px;font-size:.81rem">'+p.surgical_history+'</div></div>':''}
-      ${p.emergency_contact?'<div class="alert a-info mt-2">🆘 '+p.emergency_contact+' ('+p.emergency_rel+') · '+p.emergency_phone+'</div>':''}
-    `;
-  }catch(e){document.getElementById('ptProfileBody').innerHTML='<span style="color:var(--red)">Error</span>';}
-}
-
-// Auto-refresh every 50s for real-time drug updates
-location.reload&&setInterval(()=>location.reload(),50000);
+// Patient profile
+async function viewPatient(pid){R.modal('ptProfileModal');document.getElementById('ptProfileBody').innerHTML='<span class="text-muted text-sm">Loading…</span>';try{const r=await fetch(`/api/patient-profile/${pid}/`);const data=await r.json();if(data.status!=='ok'){document.getElementById('ptProfileBody').innerHTML='<span class="text-red">Failed to load</span>';return;}const p=data.patient;document.getElementById('ptProfileTitle').textContent=p.name+' — Profile';document.getElementById('ptProfileBody').innerHTML=`<div class="grid cols-2" style="gap:12px;margin-bottom:12px"><div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px"><div class="text-2xs fw-7 text-muted" style="text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Personal</div>${p.dob?`<div class="text-sm"><span class="text-muted">DOB: </span>${p.dob}</div>`:''} ${p.gender?`<div class="text-sm"><span class="text-muted">Gender: </span>${p.gender}</div>`:''} ${p.phone?`<div class="text-sm"><span class="text-muted">Phone: </span>${p.phone}</div>`:''}</div><div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px"><div class="text-2xs fw-7 text-muted" style="text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Clinical</div><div style="margin-bottom:6px">${p.blood_group?`<span class="badge b-red">${p.blood_group}</span> `:''} ${p.genotype?`<span class="badge b-amber">${p.genotype}</span>`:''}</div>${p.allergies?`<div class="text-sm" style="color:var(--amber)">⚠ ${p.allergies}</div>`:'<div class="text-xs text-muted">No known allergies</div>'}</div></div>${p.medical_history?`<div class="fg mb-2"><div class="label">Medical History</div><div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:10px;font-size:.82rem">${p.medical_history}</div></div>`:''} ${p.emergency_contact?`<div class="alert a-info mt-2">🆘 ${p.emergency_contact} (${p.emergency_rel}) · ${p.emergency_phone}</div>`:''}`;} catch(e){document.getElementById('ptProfileBody').innerHTML='<span class="text-red">Error</span>';}}
 </script>
 {% endblock %}

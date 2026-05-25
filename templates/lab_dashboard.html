@@ -1,194 +1,254 @@
 {% extends "base.html" %}
 {% load hp_tags %}
 {% block title %}Lab — Rhudesi{% endblock %}
+{% block logo_sub %}Laboratory{% endblock %}
+{% block role_label %}Lab Scientist{% endblock %}
+
 {% block nav %}
-<a href="{% url 'lab_dashboard' %}" class="sb-link on"><span class="sb-link-ico">🔬</span>Dashboard</a>
-<a href="{% url 'lab_attendant_history' %}" class="sb-link"><span class="sb-link-ico">📂</span>History</a>
+<a href="{% url 'lab_dashboard' %}" class="sb-item active">
+  <span class="sb-icon">🔬</span> Dashboard
+</a>
+<a href="{% url 'lab_attendant_history' %}" class="sb-item">
+  <span class="sb-icon">📂</span> History
+</a>
 {% endblock %}
-{% block topbar %}
-<div class="tog-wrap" style="padding:0;gap:8px">
-  <span class="txt-sm fw-6" style="color:var(--muted)">Available</span>
-  <label class="tog"><input type="checkbox" id="togAvail" {% if request.user.is_available %}checked{% endif %} onchange="toggleAvail(this)"><div class="tog-track"></div><div class="tog-dot"></div></label>
+
+{% block page_title %}Lab Dashboard{% endblock %}
+
+{% block topbar_widgets %}
+<div class="flex items-center gap-2">
+  <span class="text-xs text-muted">Available</span>
+  <label class="toggle">
+    <input type="checkbox" id="togAvail" {% if request.user.is_available %}checked{% endif %} onchange="toggleAvail(this)">
+    <div class="toggle-track"></div>
+    <div class="toggle-dot"></div>
+  </label>
 </div>
 {% endblock %}
+
 {% block content %}
 {% csrf_token %}
 
-<div data-tabs="lab">
-  <div class="tabs">
-    <div class="tab on" data-tabs="lab" data-tab="labMine">🔬 My Requests <span class="tab-ct">{{ my_requests|length }}</span></div>
-    <div class="tab" data-tabs="lab" data-tab="labUnassigned">📋 Unassigned <span class="tab-ct">{{ unassigned|length }}</span></div>
-    <div class="tab" data-tabs="lab" data-tab="labDone">✅ Completed <span class="tab-ct">{{ completed|length }}</span></div>
+<div class="tabs">
+  <div class="tab active" data-group="lab" data-tab="labMine">
+    🔬 My Requests <span class="tab-count">{{ my_requests|length }}</span>
   </div>
-
-  <!-- MY REQUESTS -->
-  <div id="labMine" data-group="lab" class="panel on" style="margin-top:14px">
-    {% if not my_requests %}
-    <div class="card"><div style="padding:44px;text-align:center;color:var(--text3)"><div style="font-size:2rem;margin-bottom:8px">🔬</div>No lab requests assigned to you</div></div>
-    {% endif %}
-    {% for lr in my_requests %}
-    {% with adm=lr.visit.admissions.all|first %}
-    <div class="vc" id="lr{{ lr.id }}">
-      <div class="vc-h" onclick="C.toggle('lrb{{ lr.id }}')">
-        <div class="vc-info" style="flex:1">
-          <div class="vc-name">
-            {{ lr.patient.display_name }}
-            {% if lr.doctor_note|slice:":12" == "Pre-surgery" %}
-            <span style="background:rgba(124,58,237,.12);color:#7c3aed;padding:1px 6px;border-radius:3px;font-size:.6rem;font-weight:700;margin-left:4px">⚕ SURGERY</span>
-            {% elif lr.doctor_note == "Ward patient lab request" %}
-            <span style="background:rgba(14,165,160,.12);color:var(--teal);padding:1px 6px;border-radius:3px;font-size:.6rem;font-weight:700;margin-left:4px">🛏 ADMISSION</span>
-            {% endif %}
-            <span class="badge {% if lr.status == 'in_progress' %}b-blue{% else %}b-amber{% endif %}" style="margin-left:6px">{{ lr.get_status_display }}</span>
-          </div>
-          <div class="vc-meta">
-            <span>Lab #{{ lr.id }}</span>
-            {% if lr.doctor %}<span>Dr. {{ lr.doctor.display_name }}</span>{% endif %}
-            {% if adm %}<span style="font-weight:600;color:var(--teal)">🛏 {{ adm.get_ward_display }} — Bed {{ adm.bed_number }}</span>{% endif %}
-            <span style="color:var(--text3)">Ordered: {{ lr.created_at|date:"d M Y, H:i" }}</span>
-            {% if lr.paid_at %}<span style="color:var(--text3)">Paid: {{ lr.paid_at|date:"d M Y, H:i" }}</span>{% endif %}
-          </div>
-        </div>
-        {% if lr.status != 'in_progress' %}
-        <button class="btn btn-xs b-blue" onclick="event.stopPropagation();markInProgress({{ lr.id }},this)">▶ Start</button>
-        {% endif %}
-      </div>
-      <div class="vc-body hidden" id="lrb{{ lr.id }}">
-        {% if lr.doctor_note %}
-        <div style="margin-bottom:10px;padding:8px 11px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);font-size:.78rem;color:var(--text2)">📝 {{ lr.doctor_note }}</div>
-        {% endif %}
-        {% if adm %}
-        <div style="margin-bottom:10px;padding:8px 11px;background:rgba(14,165,160,.06);border:1px solid var(--teal-border);border-radius:var(--r-sm)">
-          <div class="txt-xs fw-7" style="color:var(--teal);margin-bottom:3px">🛏 Admitted Patient</div>
-          <div class="txt-xs txt-dim">{{ adm.get_ward_display }} · Bed {{ adm.bed_number }}{% if adm.admission_reason %} · {{ adm.admission_reason|truncatechars:50 }}{% endif %}</div>
-        </div>
-        {% endif %}
-        {% for t in lr.tests.all %}
-        <div class="drug-row" style="flex-direction:column;align-items:flex-start;gap:7px;{% if t.is_completed %}border-color:var(--teal-border);background:var(--teal-glow){% endif %};margin-bottom:6px" id="test{{ t.id }}">
-          <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-            <div>
-              <div class="fw-7 txt-sm">{{ t.test.name }}</div>
-              {% if t.test.category %}<div class="txt-xs txt-muted">{{ t.test.category }}</div>{% endif %}
-              {% if t.doctor_note %}<div class="txt-xs txt-dim">{{ t.doctor_note }}</div>{% endif %}
-            </div>
-            <span class="badge {% if t.is_completed %}b-teal{% else %}b-amber{% endif %}">{% if t.is_completed %}✓ Done{% else %}Pending{% endif %}</span>
-          </div>
-          {% if t.is_completed %}
-          <div style="width:100%;padding:7px 9px;background:var(--teal-glow);border:1px solid var(--teal-border);border-radius:var(--r-sm);font-size:.8rem;white-space:pre-wrap">{{ t.result_note }}</div>
-          {% else %}
-          <div style="display:flex;gap:7px;align-items:flex-end;width:100%">
-            <textarea class="inp" id="res{{ t.id }}" rows="2" placeholder="Enter result / findings…" style="flex:1;font-size:.82rem"></textarea>
-            <button class="btn btn-teal btn-xs" onclick="submitResult({{ t.id }},{{ lr.id }})">✓ Save</button>
-          </div>
-          {% endif %}
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-    {% endwith %}
-    {% endfor %}
+  <div class="tab" data-group="lab" data-tab="labUnassigned">
+    📋 Unassigned <span class="tab-count">{{ unassigned|length }}</span>
   </div>
-
-  <!-- UNASSIGNED -->
-  <div id="labUnassigned" data-group="lab" class="panel" style="margin-top:14px">
-    {% if not unassigned %}
-    <div class="card"><div style="padding:44px;text-align:center;color:var(--text3)"><div style="font-size:2rem;margin-bottom:8px">📋</div>No unassigned requests</div></div>
-    {% endif %}
-    {% for lr in unassigned %}
-    {% with adm=lr.visit.admissions.all|first %}
-    <div class="vc">
-      <div class="vc-h">
-        <div class="vc-info" style="flex:1">
-          <div class="vc-name">
-            {{ lr.patient.display_name }}
-            {% if lr.doctor_note|slice:":12" == "Pre-surgery" %}
-            <span style="background:rgba(124,58,237,.12);color:#7c3aed;padding:1px 6px;border-radius:3px;font-size:.6rem;font-weight:700;margin-left:4px">⚕ SURGERY</span>
-            {% elif lr.doctor_note == "Ward patient lab request" %}
-            <span style="background:rgba(14,165,160,.12);color:var(--teal);padding:1px 6px;border-radius:3px;font-size:.6rem;font-weight:700;margin-left:4px">🛏 ADMISSION</span>
-            {% endif %}
-          </div>
-          <div class="vc-meta">
-            <span>Lab #{{ lr.id }}</span>
-            {% if lr.doctor %}<span>Dr. {{ lr.doctor.display_name }}</span>{% endif %}
-            {% if adm %}<span style="font-weight:600;color:var(--teal)">🛏 {{ adm.get_ward_display }} — Bed {{ adm.bed_number }}</span>{% endif %}
-            <span style="color:var(--text3)">{{ lr.created_at|date:"d M Y, H:i" }}</span>
-          </div>
-          <div class="txt-xs txt-dim" style="margin-top:3px">{% for t in lr.tests.all %}{{ t.test.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</div>
-        </div>
-        <button class="btn btn-xs btn-teal" onclick="takeLr({{ lr.id }},this)">Take →</button>
-      </div>
-    </div>
-    {% endwith %}
-    {% endfor %}
-  </div>
-
-  <!-- COMPLETED -->
-  <div id="labDone" data-group="lab" class="panel" style="margin-top:14px">
-    {% if not completed %}
-    <div class="card"><div style="padding:44px;text-align:center;color:var(--text3)"><div style="font-size:2rem;margin-bottom:8px">✅</div>Nothing completed yet</div></div>
-    {% else %}
-    <div class="card" style="overflow:hidden">
-      <table style="width:100%;border-collapse:collapse;font-size:.8rem">
-        <thead style="background:var(--surface2)">
-          <tr>
-            <th style="padding:8px 12px;text-align:left;font-size:.7rem;color:var(--text3);font-weight:700;text-transform:uppercase">Patient</th>
-            <th style="padding:8px 12px;text-align:left;font-size:.7rem;color:var(--text3);font-weight:700;text-transform:uppercase">Tests</th>
-            <th style="padding:8px 12px;text-align:left;font-size:.7rem;color:var(--text3);font-weight:700;text-transform:uppercase">Ordered</th>
-            <th style="padding:8px 12px;text-align:left;font-size:.7rem;color:var(--text3);font-weight:700;text-transform:uppercase">Completed</th>
-            <th style="padding:8px 12px;text-align:left;font-size:.7rem;color:var(--text3);font-weight:700;text-transform:uppercase">Tags</th>
-            <th style="padding:8px 12px"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for lr in completed %}
-          <tr style="border-top:1px solid var(--border)">
-            <td style="padding:8px 12px;font-weight:600">{{ lr.patient.display_name }}</td>
-            <td style="padding:8px 12px;color:var(--text2)">{% for t in lr.tests.all %}{{ t.test.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
-            <td style="padding:8px 12px;color:var(--text3);font-size:.75rem">{{ lr.created_at|date:"d M Y, H:i" }}</td>
-            <td style="padding:8px 12px;color:var(--text3);font-size:.75rem">{{ lr.completed_at|date:"d M Y, H:i" }}</td>
-            <td style="padding:8px 12px">
-              {% if lr.doctor_note|slice:":12" == "Pre-surgery" %}<span style="background:rgba(124,58,237,.12);color:#7c3aed;padding:1px 5px;border-radius:3px;font-size:.6rem;font-weight:700">⚕ Surgery</span>{% endif %}
-            </td>
-            <td style="padding:8px 12px;text-align:right">
-              <a href="{% url 'print_lab_results' lr.id %}" target="_blank" class="btn btn-ghost btn-xs">🖨 Print</a>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% endif %}
+  <div class="tab" data-group="lab" data-tab="labDone">
+    ✅ Completed <span class="tab-count">{{ completed|length }}</span>
   </div>
 </div>
 
+<!-- ═══ MY REQUESTS ═══ -->
+<div id="labMine" data-panel="lab" class="panel active">
+  {% if not my_requests %}
+  <div class="card">
+    <div class="empty-state">
+      <div class="empty-icon">🔬</div>
+      <div class="empty-title">No requests assigned to you</div>
+      <div class="empty-sub">Take requests from the Unassigned tab to get started.</div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% for lr in my_requests %}
+  {% with adm=lr.visit.admissions.all|first %}
+  <div class="visit-card" id="lr{{ lr.id }}" style="margin-bottom:10px">
+    <div class="vc-header" onclick="toggleLr('{{ lr.id }}')">
+      <div class="vc-info" style="flex:1">
+        <div class="vc-name">
+          {{ lr.patient.display_name }}
+          {% if lr.doctor_note|slice:":12" == "Pre-surgery" %}
+          <span class="badge b-purple">⚕ Surgery</span>
+          {% elif lr.doctor_note == "Ward patient lab request" %}
+          <span class="badge b-teal">🛏 Admission</span>
+          {% endif %}
+          <span class="badge {% if lr.status == 'in_progress' %}b-blue{% else %}b-amber{% endif %}">
+            <span class="badge-dot"></span>{{ lr.get_status_display }}
+          </span>
+        </div>
+        <div class="vc-meta">
+          <span>Lab #{{ lr.id }}</span>
+          {% if lr.doctor %}<span class="vc-meta-dot"></span><span>Dr. {{ lr.doctor.display_name }}</span>{% endif %}
+          {% if adm %}<span class="vc-meta-dot"></span><span class="text-teal fw-6">🛏 {{ adm.get_ward_display }} — Bed {{ adm.bed_number }}</span>{% endif %}
+          <span class="vc-meta-dot"></span>
+          <span>{{ lr.created_at|date:"d M, H:i" }}</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 flex-shrink-0" onclick="event.stopPropagation()">
+        {% if lr.status != 'in_progress' %}
+        <button class="btn btn-blue btn-xs" onclick="markInProgress({{ lr.id }},this)">▶ Start</button>
+        {% endif %}
+        <svg id="lrch{{ lr.id }}" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--text3);transition:transform .2s">
+          <path d="M3 5l4 4 4-4"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="vc-body" id="lrb{{ lr.id }}">
+      {% if lr.doctor_note %}
+      <div class="alert a-info" style="margin-bottom:12px">
+        <span class="alert-icon">📝</span><div>{{ lr.doctor_note }}</div>
+      </div>
+      {% endif %}
+
+      {% if adm %}
+      <div style="padding:10px 14px;background:var(--teal-light);border:1px solid var(--teal-border);border-radius:var(--r-md);margin-bottom:12px">
+        <div class="text-2xs fw-7 text-teal" style="text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">🛏 Admitted Patient</div>
+        <div class="text-xs text-dim">{{ adm.get_ward_display }} · Bed {{ adm.bed_number }}{% if adm.admission_reason %} · {{ adm.admission_reason|truncatechars:50 }}{% endif %}</div>
+      </div>
+      {% endif %}
+
+      {% for t in lr.tests.all %}
+      <div class="card" id="test{{ t.id }}" style="margin-bottom:8px;border-color:{% if t.is_completed %}var(--teal-border){% else %}var(--border){% endif %};background:{% if t.is_completed %}var(--teal-light){% else %}var(--surface){% endif %}">
+        <div class="card-body" style="padding:14px 16px">
+          <div class="flex items-center justify-between gap-2" style="margin-bottom:{% if not t.is_completed %}10px{% else %}0{% endif %}">
+            <div>
+              <div class="fw-7 text-sm">{{ t.test.name }}</div>
+              {% if t.test.category %}<div class="text-xs text-muted">{{ t.test.category }}</div>{% endif %}
+              {% if t.doctor_note %}<div class="text-xs text-dim mt-1">{{ t.doctor_note }}</div>{% endif %}
+            </div>
+            <span class="badge {% if t.is_completed %}b-teal{% else %}b-amber{% endif %}">
+              {% if t.is_completed %}✓ Done{% else %}Pending{% endif %}
+            </span>
+          </div>
+          {% if t.is_completed %}
+          <div style="padding:10px 12px;background:var(--teal-light);border:1px solid var(--teal-border);border-radius:var(--r-md);font-size:.82rem;white-space:pre-wrap;margin-top:8px">{{ t.result_note }}</div>
+          {% else %}
+          <div class="flex gap-2 items-end">
+            <textarea class="inp" id="res{{ t.id }}" rows="2" placeholder="Enter result / findings…" style="flex:1;font-size:.82rem"></textarea>
+            <button class="btn btn-teal btn-sm flex-shrink-0" onclick="submitResult({{ t.id }},{{ lr.id }})">✓ Save</button>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endwith %}
+  {% endfor %}
+</div>
+
+<!-- ═══ UNASSIGNED ═══ -->
+<div id="labUnassigned" data-panel="lab" class="panel">
+  {% if not unassigned %}
+  <div class="card">
+    <div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <div class="empty-title">No unassigned requests</div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% for lr in unassigned %}
+  {% with adm=lr.visit.admissions.all|first %}
+  <div class="visit-card" style="margin-bottom:10px">
+    <div class="vc-header">
+      <div class="vc-info" style="flex:1">
+        <div class="vc-name">
+          {{ lr.patient.display_name }}
+          {% if lr.doctor_note|slice:":12" == "Pre-surgery" %}
+          <span class="badge b-purple">⚕ Surgery</span>
+          {% elif lr.doctor_note == "Ward patient lab request" %}
+          <span class="badge b-teal">🛏 Admission</span>
+          {% endif %}
+        </div>
+        <div class="vc-meta">
+          <span>Lab #{{ lr.id }}</span>
+          {% if lr.doctor %}<span class="vc-meta-dot"></span><span>Dr. {{ lr.doctor.display_name }}</span>{% endif %}
+          {% if adm %}<span class="vc-meta-dot"></span><span class="text-teal fw-6">🛏 {{ adm.get_ward_display }} — Bed {{ adm.bed_number }}</span>{% endif %}
+          <span class="vc-meta-dot"></span>
+          <span>{{ lr.created_at|date:"d M, H:i" }}</span>
+        </div>
+        <div class="text-xs text-dim mt-1">{% for t in lr.tests.all %}{{ t.test.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</div>
+      </div>
+      <button class="btn btn-teal btn-sm flex-shrink-0" onclick="takeLr({{ lr.id }},this)">Take →</button>
+    </div>
+  </div>
+  {% endwith %}
+  {% endfor %}
+</div>
+
+<!-- ═══ COMPLETED ═══ -->
+<div id="labDone" data-panel="lab" class="panel">
+  {% if not completed %}
+  <div class="card">
+    <div class="empty-state">
+      <div class="empty-icon">✅</div>
+      <div class="empty-title">Nothing completed yet</div>
+    </div>
+  </div>
+  {% else %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Patient</th>
+          <th>Tests</th>
+          <th>Ordered</th>
+          <th>Completed</th>
+          <th>Tags</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for lr in completed %}
+        <tr>
+          <td>{{ lr.patient.display_name }}</td>
+          <td class="text-dim">{% for t in lr.tests.all %}{{ t.test.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+          <td class="text-xs text-muted">{{ lr.created_at|date:"d M, H:i" }}</td>
+          <td class="text-xs text-muted">{{ lr.completed_at|date:"d M, H:i" }}</td>
+          <td>{% if lr.doctor_note|slice:":12" == "Pre-surgery" %}<span class="badge b-purple">⚕ Surgery</span>{% endif %}</td>
+          <td><a href="{% url 'print_lab_results' lr.id %}" target="_blank" class="btn btn-ghost btn-xs">🖨 Print</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block js %}
 <script>
+function toggleLr(id){
+  const body = document.getElementById('lrb'+id);
+  const ch = document.getElementById('lrch'+id);
+  const open = body.classList.toggle('open');
+  if(ch) ch.style.transform = open ? 'rotate(180deg)' : '';
+}
 async function toggleAvail(cb){
-  const r=await C.post('/api/toggle-availability/',{field:'is_available'});
-  if(r.status==='ok'){document.getElementById('togAvail').checked=r.value;}
-  else{cb.checked=!cb.checked;C.toast('Failed','err');}
+  const r = await R.post('/api/toggle-availability/', {field:'is_available'});
+  if(r.status === 'ok'){ cb.checked = r.value; R.toast(r.value ? 'Now available' : 'Now unavailable', 'ok'); }
+  else { cb.checked = !cb.checked; R.toast('Failed','err'); }
 }
-async function takeLr(id,btn){
-  const r=await C.post(`/lab/take/${id}/`);
-  if(r.status==='ok'){C.toast('Assigned to you','ok');setTimeout(()=>location.reload(),400);}
-  else C.toast(r.error,'err');
+async function takeLr(id, btn){
+  const r = await R.post(`/lab/take/${id}/`);
+  if(r.status === 'ok'){ R.toast('Assigned to you','ok'); setTimeout(() => location.reload(), 400); }
+  else R.toast(r.error,'err');
 }
-async function markInProgress(id,btn){
-  const r=await C.post(`/lab/start/${id}/`);
-  if(r.status==='ok'){C.toast('Started','ok');setTimeout(()=>location.reload(),400);}
-  else C.toast(r.error,'err');
+async function markInProgress(id, btn){
+  const r = await R.post(`/lab/start/${id}/`);
+  if(r.status === 'ok'){ R.toast('Started','ok'); setTimeout(() => location.reload(), 400); }
+  else R.toast(r.error,'err');
 }
-async function submitResult(testId,lrId){
-  const note=document.getElementById('res'+testId)?.value?.trim();
-  if(!note){C.toast('Enter result before saving','err');return;}
-  const fd=new FormData();fd.append('csrfmiddlewaretoken',C.csrf());fd.append('result_note',note);
-  const r=await fetch(`/lab/submit-result/${testId}/`,{method:'POST',body:fd});
-  const res=await r.json();
-  if(res.status==='ok'){
-    C.toast(res.all_done?'All results saved — moving to Completed!':'Result saved!','ok');
-    const el=document.getElementById('test'+testId);
-    if(el){el.style.borderColor='var(--teal-border)';el.style.background='var(--teal-glow)';}
-    // Always reload after saving — refreshes both My Requests and Completed tabs
-    setTimeout(()=>location.reload(),800);
-  }else C.toast(res.error,'err');
+async function submitResult(testId, lrId){
+  const note = document.getElementById('res'+testId)?.value?.trim();
+  if(!note){ R.toast('Enter result before saving','err'); return; }
+  const fd = new FormData();
+  fd.append('csrfmiddlewaretoken', R.csrf());
+  fd.append('result_note', note);
+  const r = await fetch(`/lab/submit-result/${testId}/`, {method:'POST', body:fd});
+  const res = await r.json();
+  if(res.status === 'ok'){
+    R.toast(res.all_done ? 'All results saved!' : 'Result saved!', 'ok');
+    const el = document.getElementById('test'+testId);
+    if(el){ el.style.borderColor = 'var(--teal-border)'; el.style.background = 'var(--teal-light)'; }
+    setTimeout(() => location.reload(), 800);
+  } else R.toast(res.error,'err');
 }
 </script>
 {% endblock %}

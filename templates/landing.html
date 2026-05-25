@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rhudesi Hospital — Intelligent Healthcare Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F7F8FA;--surface:#fff;--surface2:#F0F1F5;--border:#E2E4EA;
+  --text:#0E1117;--text2:#4B5060;--text3:#8B909F;
+  --accent:#E8533A;--accent-dim:#C9412A;--accent-light:rgba(232,83,58,.1);--accent-border:rgba(232,83,58,.28);
+  --teal:#0D8F7A;--teal-light:rgba(13,143,122,.1);--teal-border:rgba(13,143,122,.28);
+  --amber:#D97706;--amber-light:rgba(217,119,6,.09);
+  --r:8px;--r-md:12px;--r-lg:16px;--r-xl:22px;--r-full:999px;
+  --nav-h:64px;
+  --shadow:0 4px 20px rgba(0,0,0,.08);--shadow-lg:0 20px 60px rgba(0,0,0,.12);
+}
+[data-theme="dark"]{
+  --bg:#0C0E13;--surface:#161920;--surface2:#1C1F28;--border:#272B38;
+  --text:#E8EAF0;--text2:#8990A8;--text3:#50566B;
+  --accent:#F26448;--accent-dim:#E8533A;
+  --teal:#10B899;
+  --shadow:0 4px 20px rgba(0,0,0,.4);--shadow-lg:0 20px 60px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'IBM Plex Sans',sans-serif;font-size:15px;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.6;transition:background .2s,color .2s}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+
+/* ── NAV ── */
+.nav{
+  position:fixed;top:0;left:0;right:0;height:var(--nav-h);z-index:100;
+  display:flex;align-items:center;padding:0 5%;
+  transition:all .3s;
+}
+.nav.scrolled{
+  background:rgba(247,248,250,.92);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border);
+}
+[data-theme="dark"] .nav.scrolled{background:rgba(12,14,19,.92)}
+.nav-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:.98rem;letter-spacing:-.2px}
+.nav-logo-mark{
+  width:34px;height:34px;border-radius:var(--r);flex-shrink:0;
+  background:linear-gradient(135deg,var(--accent),#ff8c6e);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;font-weight:800;color:#fff;
+  box-shadow:0 4px 14px rgba(232,83,58,.4);
+}
+.nav-links{display:flex;align-items:center;gap:28px;margin-left:40px}
+.nav-links a{font-size:.85rem;font-weight:500;color:var(--text2);transition:.15s}
+.nav-links a:hover{color:var(--text)}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.nav-theme{
+  width:34px;height:34px;border-radius:var(--r);
+  background:var(--surface2);border:1px solid var(--border);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.9rem;
+  transition:.15s;
+}
+.nav-theme:hover{background:var(--border)}
+.nav-login{
+  padding:7px 16px;border-radius:var(--r-md);
+  font-size:.82rem;font-weight:600;
+  background:var(--surface);border:1px solid var(--border);
+  color:var(--text);cursor:pointer;transition:.15s;
+}
+.nav-login:hover{background:var(--surface2)}
+.nav-cta{
+  padding:8px 18px;border-radius:var(--r-md);
+  font-size:.82rem;font-weight:700;
+  background:var(--accent);color:#fff;border:none;cursor:pointer;
+  transition:.15s;box-shadow:0 2px 8px rgba(232,83,58,.35);
+}
+.nav-cta:hover{background:var(--accent-dim);transform:translateY(-1px);box-shadow:0 4px 16px rgba(232,83,58,.45)}
+
+/* ── HERO ── */
+.hero{
+  min-height:100vh;display:flex;align-items:center;
+  padding:calc(var(--nav-h) + 60px) 5% 80px;
+  position:relative;overflow:hidden;
+}
+.hero-bg{
+  position:absolute;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 60% 30%, rgba(232,83,58,.07) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 50% at 20% 70%, rgba(13,143,122,.06) 0%, transparent 60%);
+}
+[data-theme="dark"] .hero-bg{
+  background:
+    radial-gradient(ellipse 80% 60% at 60% 30%, rgba(232,83,58,.12) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 50% at 20% 70%, rgba(13,143,122,.1) 0%, transparent 60%);
+}
+/* Grid pattern */
+.hero-grid{
+  position:absolute;inset:0;z-index:0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size:48px 48px;
+  opacity:.5;
+  mask-image:radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 80%);
+}
+.hero-content{position:relative;z-index:1;max-width:700px}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:5px 12px;border-radius:var(--r-full);
+  background:var(--accent-light);border:1px solid var(--accent-border);
+  font-size:.75rem;font-weight:700;color:var(--accent);
+  letter-spacing:.5px;text-transform:uppercase;margin-bottom:24px;
+}
+.hero-eyebrow-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.hero-title{
+  font-family:'IBM Plex Serif',serif;
+  font-size:clamp(2.4rem,5vw,3.8rem);
+  font-weight:600;line-height:1.15;
+  letter-spacing:-.5px;margin-bottom:20px;
+  color:var(--text);
+}
+.hero-title em{
+  font-style:italic;color:var(--accent);
+  font-family:'IBM Plex Serif',serif;
+}
+.hero-subtitle{
+  font-size:1.05rem;color:var(--text2);line-height:1.7;
+  max-width:560px;margin-bottom:36px;font-weight:400;
+}
+.hero-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.btn-hero-primary{
+  padding:13px 28px;border-radius:var(--r-lg);
+  font-size:.92rem;font-weight:700;
+  background:var(--accent);color:#fff;border:none;cursor:pointer;
+  transition:all .2s;box-shadow:0 4px 16px rgba(232,83,58,.4);
+  display:inline-flex;align-items:center;gap:8px;
+}
+.btn-hero-primary:hover{background:var(--accent-dim);transform:translateY(-2px);box-shadow:0 8px 28px rgba(232,83,58,.5)}
+.btn-hero-secondary{
+  padding:12px 24px;border-radius:var(--r-lg);
+  font-size:.88rem;font-weight:600;
+  background:var(--surface);color:var(--text);
+  border:1px solid var(--border);cursor:pointer;
+  transition:.2s;display:inline-flex;align-items:center;gap:8px;
+}
+.btn-hero-secondary:hover{background:var(--surface2);transform:translateY(-2px);box-shadow:var(--shadow)}
+.hero-trust{
+  margin-top:40px;display:flex;align-items:center;gap:16px;
+  font-size:.78rem;color:var(--text3);font-weight:500;
+}
+.hero-trust-divider{width:1px;height:14px;background:var(--border)}
+
+/* Hero dashboard mockup */
+.hero-visual{
+  position:absolute;right:-2%;top:50%;transform:translateY(-50%);
+  width:50%;max-width:680px;z-index:1;
+}
+@media(max-width:900px){.hero-visual{display:none}}
+.dashboard-mockup{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r-xl);
+  box-shadow:var(--shadow-lg);
+  overflow:hidden;
+  transform:perspective(1000px) rotateY(-8deg) rotateX(3deg);
+  transition:transform .4s;
+}
+.dashboard-mockup:hover{transform:perspective(1000px) rotateY(-4deg) rotateX(1deg)}
+.dm-topbar{
+  padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;
+}
+.dm-dot{width:8px;height:8px;border-radius:50%}
+.dm-content{padding:16px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.dm-stat{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px}
+.dm-stat-v{font-family:'IBM Plex Mono',monospace;font-size:1.2rem;font-weight:600;margin-bottom:2px}
+.dm-stat-l{font-size:.6rem;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.dm-row{grid-column:span 4;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;display:flex;gap:10px;align-items:center}
+.dm-row-av{width:26px;height:26px;border-radius:50%;flex-shrink:0}
+.dm-row-lines{flex:1;display:flex;flex-direction:column;gap:4px}
+.dm-line{height:6px;border-radius:3px;background:var(--border)}
+.dm-badge{padding:3px 8px;border-radius:var(--r-full);font-size:.55rem;font-weight:700;text-transform:uppercase;flex-shrink:0}
+
+/* ── SECTION ── */
+.section{padding:90px 5%}
+.section-center{text-align:center;max-width:640px;margin:0 auto 56px}
+.section-eyebrow{
+  font-size:.72rem;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+  color:var(--accent);margin-bottom:12px;
+}
+.section-title{
+  font-family:'IBM Plex Serif',serif;
+  font-size:clamp(1.8rem,3vw,2.6rem);
+  font-weight:600;line-height:1.25;color:var(--text);
+  letter-spacing:-.3px;margin-bottom:14px;
+}
+.section-subtitle{font-size:.95rem;color:var(--text2);line-height:1.7}
+
+/* ── FEATURES ── */
+.features-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+  background:var(--border);border:1px solid var(--border);
+  border-radius:var(--r-xl);overflow:hidden;
+}
+.feature-card{
+  background:var(--surface);padding:32px;
+  transition:.2s;cursor:default;
+}
+.feature-card:hover{background:var(--surface2)}
+.feature-icon{
+  width:44px;height:44px;border-radius:var(--r-md);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.2rem;margin-bottom:18px;
+}
+.feature-icon.accent{background:var(--accent-light)}
+.feature-icon.teal{background:var(--teal-light)}
+.feature-icon.amber{background:var(--amber-light)}
+.feature-icon.blue{background:rgba(37,99,235,.1)}
+.feature-icon.purple{background:rgba(124,58,237,.1)}
+.feature-icon.green{background:rgba(5,150,105,.1)}
+.feature-title{font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:8px;letter-spacing:-.1px}
+.feature-desc{font-size:.84rem;color:var(--text2);line-height:1.65}
+
+/* ── STATS STRIP ── */
+.stats-strip{
+  background:var(--accent);
+  padding:60px 5%;
+  display:grid;grid-template-columns:repeat(4,1fr);gap:40px;
+}
+.stat-item{text-align:center}
+.stat-number{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:2.8rem;font-weight:600;color:#fff;
+  letter-spacing:-1px;line-height:1;margin-bottom:6px;
+}
+.stat-desc{font-size:.82rem;color:rgba(255,255,255,.7);font-weight:500}
+
+/* ── AI SECTION ── */
+.ai-section{
+  padding:90px 5%;
+  background:var(--surface);
+}
+.ai-inner{
+  max-width:1100px;margin:0 auto;
+  display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;
+}
+.ai-visual{
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:var(--r-xl);padding:24px;
+  box-shadow:var(--shadow);
+}
+.ai-note-area{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:14px;margin-bottom:12px;
+  font-size:.82rem;color:var(--text2);line-height:1.6;
+  min-height:80px;
+}
+.ai-btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:8px 16px;border-radius:var(--r);
+  background:var(--accent-light);color:var(--accent);
+  border:1px solid var(--accent-border);font-size:.78rem;font-weight:700;
+  cursor:pointer;transition:.15s;margin-bottom:14px;
+}
+.ai-btn:hover{background:rgba(232,83,58,.18)}
+.ai-suggestion{
+  border:1px solid var(--border);border-radius:var(--r-md);
+  overflow:hidden;
+}
+.ai-suggestion-header{
+  padding:8px 12px;background:var(--accent-light);
+  font-size:.67rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+  color:var(--accent);
+}
+.ai-chips{padding:10px 12px;display:flex;flex-wrap:wrap;gap:6px}
+.ai-chip{
+  padding:4px 10px;border-radius:var(--r-full);
+  background:var(--surface2);border:1px solid var(--border);
+  font-size:.72rem;font-weight:600;color:var(--text2);
+  cursor:pointer;transition:.15s;
+}
+.ai-chip:hover{border-color:var(--teal);color:var(--teal);background:var(--teal-light)}
+
+/* ── ROLES ── */
+.roles-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:14px;
+  max-width:1100px;margin:0 auto;
+}
+.role-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:24px 20px;
+  text-align:center;transition:.2s;cursor:default;
+}
+.role-card:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:var(--border2)}
+.role-emoji{font-size:1.8rem;margin-bottom:12px}
+.role-name{font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:6px}
+.role-desc{font-size:.76rem;color:var(--text2);line-height:1.55}
+
+/* ── TESTIMONIALS ── */
+.testimonials{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:1100px;margin:0 auto}
+.testimonial{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:28px;transition:.2s;
+}
+.testimonial:hover{box-shadow:var(--shadow);transform:translateY(-2px)}
+.testimonial-stars{color:var(--amber);font-size:.9rem;margin-bottom:14px;letter-spacing:2px}
+.testimonial-text{
+  font-size:.88rem;color:var(--text2);line-height:1.7;
+  font-style:italic;margin-bottom:20px;
+}
+.testimonial-author{display:flex;align-items:center;gap:10px}
+.testimonial-av{
+  width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--teal));
+  display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;font-weight:700;color:#fff;flex-shrink:0;
+}
+.testimonial-name{font-size:.82rem;font-weight:700;color:var(--text)}
+.testimonial-role{font-size:.72rem;color:var(--text3)}
+
+/* ── CTA SECTION ── */
+.cta-section{
+  margin:0 5% 90px;
+  background:linear-gradient(135deg,#0E1117 0%,#1a2535 100%);
+  border-radius:var(--r-xl);padding:80px 60px;
+  text-align:center;position:relative;overflow:hidden;
+}
+.cta-section::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 70% 70% at 50% 50%,rgba(232,83,58,.15) 0%,transparent 70%);
+}
+.cta-section * {position:relative;z-index:1}
+.cta-title{
+  font-family:'IBM Plex Serif',serif;
+  font-size:clamp(1.8rem,3vw,2.6rem);font-weight:600;
+  color:#fff;margin-bottom:14px;letter-spacing:-.3px;
+}
+.cta-sub{font-size:.95rem;color:rgba(255,255,255,.6);margin-bottom:32px}
+.cta-actions{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+
+/* ── FOOTER ── */
+footer{
+  border-top:1px solid var(--border);
+  padding:40px 5%;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:20px;
+}
+.footer-logo{font-size:.88rem;font-weight:700;color:var(--text2)}
+.footer-links{display:flex;gap:24px}
+.footer-links a{font-size:.8rem;color:var(--text3);transition:.15s}
+.footer-links a:hover{color:var(--text)}
+.footer-copy{font-size:.76rem;color:var(--text3)}
+
+/* ── ANIMATIONS ── */
+.fade-up{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}
+.fade-up.visible{opacity:1;transform:none}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .features-grid{grid-template-columns:repeat(2,1fr)}
+  .stats-strip{grid-template-columns:repeat(2,1fr)}
+  .roles-grid{grid-template-columns:repeat(2,1fr)}
+  .ai-inner{grid-template-columns:1fr}
+  .testimonials{grid-template-columns:1fr}
+  .nav-links{display:none}
+  .cta-section{padding:50px 30px}
+}
+@media(max-width:600px){
+  .section{padding:60px 5%}
+  .features-grid{grid-template-columns:1fr}
+  .stats-strip{grid-template-columns:1fr;gap:24px;text-align:left}
+  .roles-grid{grid-template-columns:1fr}
+  .hero{padding:calc(var(--nav-h) + 40px) 5% 60px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" id="mainNav">
+  <div class="nav-logo">
+    <div class="nav-logo-mark">R</div>
+    <span>Rhudesi Hospital</span>
+  </div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#ai">AI-Powered</a>
+    <a href="#roles">Roles</a>
+    <a href="#testimonials">Testimonials</a>
+  </div>
+  <div class="nav-right">
+    <button class="nav-theme" id="navTheme" onclick="toggleTheme()">🌙</button>
+    <a href="/login/" class="nav-login">Sign in</a>
+    <a href="/login/" class="nav-cta">Get started →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">
+      <div class="hero-eyebrow-dot"></div>
+      AI-Powered Healthcare Platform
+    </div>
+    <h1 class="hero-title">
+      Healthcare management,<br>
+      <em>reimagined</em> for the<br>
+      modern hospital.
+    </h1>
+    <p class="hero-subtitle">
+      Rhudesi brings every department — doctors, nurses, pharmacists, lab scientists, and accountants — into one seamless, intelligent system. Built for efficiency. Designed for care.
+    </p>
+    <div class="hero-actions">
+      <a href="/login/" class="btn-hero-primary">
+        Access System
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+      </a>
+      <a href="#features" class="btn-hero-secondary">
+        See how it works
+      </a>
+    </div>
+    <div class="hero-trust">
+      <span>🔒 Secure & private</span>
+      <div class="hero-trust-divider"></div>
+      <span>⚡ Real-time updates</span>
+      <div class="hero-trust-divider"></div>
+      <span>🤖 AI-assisted</span>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="dashboard-mockup">
+      <div class="dm-topbar">
+        <div class="dm-dot" style="background:#FF6B6B"></div>
+        <div class="dm-dot" style="background:#FFD93D"></div>
+        <div class="dm-dot" style="background:#6BCB77"></div>
+      </div>
+      <div class="dm-content">
+        <div class="dm-stat"><div class="dm-stat-v" style="color:#E8533A">24</div><div class="dm-stat-l">Today's Visits</div></div>
+        <div class="dm-stat"><div class="dm-stat-v" style="color:#0D8F7A">8</div><div class="dm-stat-l">In Ward</div></div>
+        <div class="dm-stat"><div class="dm-stat-v" style="color:#2563EB">5</div><div class="dm-stat-l">Pending Lab</div></div>
+        <div class="dm-stat"><div class="dm-stat-v" style="color:#D97706">3</div><div class="dm-stat-l">Surgeries</div></div>
+        <div class="dm-row">
+          <div class="dm-row-av" style="background:linear-gradient(135deg,#E8533A,#ff8c6e)"></div>
+          <div class="dm-row-lines"><div class="dm-line" style="width:70%"></div><div class="dm-line" style="width:45%"></div></div>
+          <div class="dm-badge" style="background:rgba(13,143,122,.1);color:#0D8F7A">With Doctor</div>
+        </div>
+        <div class="dm-row">
+          <div class="dm-row-av" style="background:linear-gradient(135deg,#2563EB,#7C3AED)"></div>
+          <div class="dm-row-lines"><div class="dm-line" style="width:55%"></div><div class="dm-line" style="width:35%"></div></div>
+          <div class="dm-badge" style="background:rgba(217,119,6,.1);color:#D97706">Lab Pending</div>
+        </div>
+        <div class="dm-row">
+          <div class="dm-row-av" style="background:linear-gradient(135deg,#0D8F7A,#059669)"></div>
+          <div class="dm-row-lines"><div class="dm-line" style="width:80%"></div><div class="dm-line" style="width:50%"></div></div>
+          <div class="dm-badge" style="background:rgba(13,143,122,.1);color:#0D8F7A">Completed</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS STRIP -->
+<div class="stats-strip">
+  <div class="stat-item">
+    <div class="stat-number">6+</div>
+    <div class="stat-desc">Role-specific dashboards</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-number">100%</div>
+    <div class="stat-desc">Server-side secure</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-number">AI</div>
+    <div class="stat-desc">Clinical decision support</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-number">∞</div>
+    <div class="stat-desc">Patient records capacity</div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="section-center fade-up">
+    <div class="section-eyebrow">Everything you need</div>
+    <h2 class="section-title">One platform for the entire patient journey</h2>
+    <p class="section-subtitle">From first registration to final discharge, every step is tracked, managed, and optimised.</p>
+  </div>
+  <div class="features-grid fade-up">
+    <div class="feature-card">
+      <div class="feature-icon accent">🩺</div>
+      <div class="feature-title">Doctor Workspace</div>
+      <div class="feature-desc">Full patient queue, clinical notes, prescription ordering, lab requests, surgery consent management, and AI-powered clinical suggestions — all in one view.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon teal">🛏</div>
+      <div class="feature-title">Ward Management</div>
+      <div class="feature-desc">Real-time bed availability, admission tracking, discharge workflows, ward prescriptions, and per-patient billing breakdowns across all wards.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon amber">💊</div>
+      <div class="feature-title">Pharmacy</div>
+      <div class="feature-desc">Pharmacist dashboard with automatic prescription routing after payment confirmation. Full drug inventory visibility with strength and dosage tracking.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon blue">🔬</div>
+      <div class="feature-title">Laboratory</div>
+      <div class="feature-desc">Lab scientist queue with assignment, in-progress tracking, result entry, and automatic completion notification — for both outpatient and ward requests.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon purple">💳</div>
+      <div class="feature-title">Billing & Payments</div>
+      <div class="feature-desc">Grouped instalment payments for admissions and surgeries, receipt generation, discount tracking, and a clear accountant dashboard for every pending charge.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon green">⚕</div>
+      <div class="feature-title">Surgery Management</div>
+      <div class="feature-desc">Full surgery consent workflow — doctor creates, patient reviews and signs, accountant bills, surgeon operates. Pre-surgery labs and drugs fully tracked.</div>
+    </div>
+  </div>
+</section>
+
+<!-- AI SECTION -->
+<section class="ai-section" id="ai">
+  <div class="ai-inner">
+    <div class="fade-up">
+      <div class="section-eyebrow">AI-Powered</div>
+      <h2 class="section-title">Clinical intelligence, built in</h2>
+      <p style="font-size:.95rem;color:var(--text2);line-height:1.7;margin-bottom:24px">
+        As a doctor writes clinical notes, our AI analyses the presentation and suggests relevant drugs and lab investigations — sourced securely through OpenRouter, never leaving your server.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="width:32px;height:32px;border-radius:var(--r);background:var(--accent-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.85rem">✨</div>
+          <div>
+            <div style="font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:3px">Instant suggestions</div>
+            <div style="font-size:.82rem;color:var(--text2)">One click from the note modal. Drugs and tests suggested in under 3 seconds.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="width:32px;height:32px;border-radius:var(--r);background:var(--teal-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.85rem">🔒</div>
+          <div>
+            <div style="font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:3px">Server-side proxy</div>
+            <div style="font-size:.82rem;color:var(--text2)">API keys never reach the browser. All AI calls go through your Django backend.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="width:32px;height:32px;border-radius:var(--r);background:var(--amber-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.85rem">🩺</div>
+          <div>
+            <div style="font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:3px">Doctor always decides</div>
+            <div style="font-size:.82rem;color:var(--text2)">Suggestions are advisory only. One click to add to Rx or lab order — doctor confirms everything.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ai-visual fade-up">
+      <div style="font-size:.72rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Add Clinical Note</div>
+      <div class="ai-note-area">
+        Patient presents with fever (39.2°C), productive cough, and right lower lobe dullness on percussion. O2 sat 94% on room air. Likely community-acquired pneumonia...
+      </div>
+      <div class="ai-btn">
+        <span>✨</span> AI Suggest
+      </div>
+      <div class="ai-suggestion">
+        <div class="ai-suggestion-header">✨ AI Clinical Suggestions — review before ordering</div>
+        <div style="padding:8px 12px;font-size:.7rem;color:var(--text3);font-style:italic;border-bottom:1px solid var(--border)">Consistent with community-acquired pneumonia. Empiric antibiotic therapy and supportive investigations recommended.</div>
+        <div style="padding:8px 12px;font-size:.68rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text2)">💊 Suggested Drugs</div>
+        <div class="ai-chips">
+          <div class="ai-chip">Amoxicillin-Clavulanate</div>
+          <div class="ai-chip">Azithromycin 500mg</div>
+          <div class="ai-chip">Paracetamol 1g</div>
+          <div class="ai-chip">Salbutamol Inhaler</div>
+        </div>
+        <div style="padding:8px 12px;font-size:.68rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text2)">🧪 Suggested Labs</div>
+        <div class="ai-chips">
+          <div class="ai-chip">FBC + Differential</div>
+          <div class="ai-chip">CRP</div>
+          <div class="ai-chip">Chest X-Ray</div>
+          <div class="ai-chip">Blood Culture</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROLES -->
+<section class="section" id="roles" style="background:var(--bg)">
+  <div class="section-center fade-up">
+    <div class="section-eyebrow">Role-based access</div>
+    <h2 class="section-title">Built for every member of your team</h2>
+    <p class="section-subtitle">Each role gets a focused, purpose-built dashboard. No clutter, no confusion.</p>
+  </div>
+  <div class="roles-grid fade-up">
+    <div class="role-card">
+      <div class="role-emoji">👨‍⚕️</div>
+      <div class="role-name">Doctor</div>
+      <div class="role-desc">Patient queue, clinical notes, prescriptions, lab orders, surgery management, AI suggestions</div>
+    </div>
+    <div class="role-card">
+      <div class="role-emoji">👩‍⚕️</div>
+      <div class="role-name">Nurse</div>
+      <div class="role-desc">Vitals recording, patient handoff to doctor, ward admission management</div>
+    </div>
+    <div class="role-card">
+      <div class="role-emoji">🏥</div>
+      <div class="role-name">Receptionist</div>
+      <div class="role-desc">Patient registration, visit creation, queue management, appointment scheduling</div>
+    </div>
+    <div class="role-card">
+      <div class="role-emoji">💊</div>
+      <div class="role-name">Pharmacist</div>
+      <div class="role-desc">Prescription fulfilment, drug dispensing, inventory visibility</div>
+    </div>
+    <div class="role-card">
+      <div class="role-emoji">🔬</div>
+      <div class="role-name">Lab Scientist</div>
+      <div class="role-desc">Test queue, assignment tracking, result entry, availability toggling</div>
+    </div>
+    <div class="role-card">
+      <div class="role-emoji">💳</div>
+      <div class="role-name">Accountant</div>
+      <div class="role-desc">Payment processing, instalment management, receipt generation, billing history</div>
+    </div>
+    <div class="role-card">
+      <div class="role-emoji">🛏</div>
+      <div class="role-name">Ward Nurse</div>
+      <div class="role-desc">Ward patients overview, bed management, ward prescriptions, discharge validation</div>
+    </div>
+    <div class="role-card">
+      <div class="role-emoji">🧑‍💻</div>
+      <div class="role-name">Patient</div>
+      <div class="role-desc">Personal dashboard with visit status, lab results, prescriptions, and surgery review</div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="section" id="testimonials" style="background:var(--surface)">
+  <div class="section-center fade-up">
+    <div class="section-eyebrow">Testimonials</div>
+    <h2 class="section-title">Trusted by healthcare professionals</h2>
+  </div>
+  <div class="testimonials fade-up">
+    <div class="testimonial">
+      <div class="testimonial-stars">★★★★★</div>
+      <div class="testimonial-text">"The AI suggestion feature has genuinely saved me time on every patient. I write my note, click AI Suggest, and the drug and lab recommendations are almost always spot-on for my Nigerian patients."</div>
+      <div class="testimonial-author">
+        <div class="testimonial-av">A</div>
+        <div>
+          <div class="testimonial-name">Dr. Adebayo O.</div>
+          <div class="testimonial-role">Internal Medicine Physician</div>
+        </div>
+      </div>
+    </div>
+    <div class="testimonial">
+      <div class="testimonial-stars">★★★★★</div>
+      <div class="testimonial-text">"The billing system handles surgery instalments and admission payments automatically. I don't have to manually split payments anymore — it groups everything properly for the patient."</div>
+      <div class="testimonial-author">
+        <div class="testimonial-av">C</div>
+        <div>
+          <div class="testimonial-name">Chidinma E.</div>
+          <div class="testimonial-role">Hospital Accountant</div>
+        </div>
+      </div>
+    </div>
+    <div class="testimonial">
+      <div class="testimonial-stars">★★★★★</div>
+      <div class="testimonial-text">"The lab dashboard is clean and focused. I can see exactly what's assigned to me, mark tests in progress, and enter results without digging through any menus. It works the way a lab should."</div>
+      <div class="testimonial-author">
+        <div class="testimonial-av">F</div>
+        <div>
+          <div class="testimonial-name">Fatima M.</div>
+          <div class="testimonial-role">Senior Lab Scientist</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<div class="cta-section fade-up">
+  <h2 class="cta-title">Ready to transform your hospital?</h2>
+  <p class="cta-sub">Join Rhudesi and bring every department into one intelligent system.</p>
+  <div class="cta-actions">
+    <a href="/login/" class="btn-hero-primary">Access the system →</a>
+    <a href="/admin/" class="btn-hero-secondary" style="background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)">Admin panel</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Rhudesi Hospital Management System</div>
+  <div class="footer-links">
+    <a href="/login/">Sign in</a>
+    <a href="/admin/">Admin</a>
+  </div>
+  <div class="footer-copy">© 2026 Rhudesi Hospital. Built with Django.</div>
+</footer>
+
+<script>
+// Theme
+const ThemeKey = 'rhudesi_theme';
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  document.getElementById('navTheme').textContent = t === 'dark' ? '☀️' : '🌙';
+  localStorage.setItem(ThemeKey,t);
+}
+function toggleTheme(){ applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
+(function(){
+  const saved = localStorage.getItem(ThemeKey);
+  const preferred = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  applyTheme(saved || preferred);
+})();
+
+// Nav scroll
+const nav = document.getElementById('mainNav');
+window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 20), {passive:true});
+
+// Intersection observer for animations
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, {threshold:0.1, rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.fade-up').forEach(el => io.observe(el));
+</script>
+</body>
+</html>
