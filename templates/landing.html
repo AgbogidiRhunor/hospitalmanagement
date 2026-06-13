@@ -10,7 +10,7 @@
 :root{
   --bg:#F7F8FA;--surface:#fff;--surface2:#F0F1F5;--border:#E2E4EA;
   --text:#0E1117;--text2:#4B5060;--text3:#8B909F;
-  --accent:#E8533A;--accent-dim:#C9412A;--accent-light:rgba(232,83,58,.1);--accent-border:rgba(232,83,58,.28);
+  --accent:#2563EB;--accent-dim:#1D4ED8;--accent-light:rgba(37,99,235,.1);--accent-border:rgba(37,99,235,.28);
   --teal:#0D8F7A;--teal-light:rgba(13,143,122,.1);--teal-border:rgba(13,143,122,.28);
   --amber:#D97706;--amber-light:rgba(217,119,6,.09);
   --r:8px;--r-md:12px;--r-lg:16px;--r-xl:22px;--r-full:999px;
@@ -20,7 +20,7 @@
 [data-theme="dark"]{
   --bg:#0C0E13;--surface:#161920;--surface2:#1C1F28;--border:#272B38;
   --text:#E8EAF0;--text2:#8990A8;--text3:#50566B;
-  --accent:#F26448;--accent-dim:#E8533A;
+  --accent:#3B82F6;--accent-dim:#2563EB;
   --teal:#10B899;
   --shadow:0 4px 20px rgba(0,0,0,.4);--shadow-lg:0 20px 60px rgba(0,0,0,.6);
 }
@@ -45,7 +45,7 @@ img{max-width:100%;display:block}
 .nav-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:.98rem;letter-spacing:-.2px}
 .nav-logo-mark{
   width:34px;height:34px;border-radius:var(--r);flex-shrink:0;
-  background:linear-gradient(135deg,var(--accent),#ff8c6e);
+  background:linear-gradient(135deg,#2563EB,#60a5fa);
   display:flex;align-items:center;justify-content:center;
   font-size:.85rem;font-weight:800;color:#fff;
   box-shadow:0 4px 14px rgba(232,83,58,.4);
@@ -72,7 +72,7 @@ img{max-width:100%;display:block}
   padding:8px 18px;border-radius:var(--r-md);
   font-size:.82rem;font-weight:700;
   background:var(--accent);color:#fff;border:none;cursor:pointer;
-  transition:.15s;box-shadow:0 2px 8px rgba(232,83,58,.35);
+  transition:.15s;box-shadow:0 2px 8px rgba(37,99,235,.35);
 }
 .nav-cta:hover{background:var(--accent-dim);transform:translateY(-1px);box-shadow:0 4px 16px rgba(232,83,58,.45)}
 
@@ -85,12 +85,12 @@ img{max-width:100%;display:block}
 .hero-bg{
   position:absolute;inset:0;z-index:0;
   background:
-    radial-gradient(ellipse 80% 60% at 60% 30%, rgba(232,83,58,.07) 0%, transparent 70%),
+    radial-gradient(ellipse 80% 60% at 60% 30%, rgba(37,99,235,.07) 0%, transparent 70%),
     radial-gradient(ellipse 60% 50% at 20% 70%, rgba(13,143,122,.06) 0%, transparent 60%);
 }
 [data-theme="dark"] .hero-bg{
   background:
-    radial-gradient(ellipse 80% 60% at 60% 30%, rgba(232,83,58,.12) 0%, transparent 70%),
+    radial-gradient(ellipse 80% 60% at 60% 30%, rgba(37,99,235,.12) 0%, transparent 70%),
     radial-gradient(ellipse 60% 50% at 20% 70%, rgba(13,143,122,.1) 0%, transparent 60%);
 }
 /* Grid pattern */
@@ -133,10 +133,10 @@ img{max-width:100%;display:block}
   padding:13px 28px;border-radius:var(--r-lg);
   font-size:.92rem;font-weight:700;
   background:var(--accent);color:#fff;border:none;cursor:pointer;
-  transition:all .2s;box-shadow:0 4px 16px rgba(232,83,58,.4);
+  transition:all .2s;box-shadow:0 4px 16px rgba(37,99,235,.4);
   display:inline-flex;align-items:center;gap:8px;
 }
-.btn-hero-primary:hover{background:var(--accent-dim);transform:translateY(-2px);box-shadow:0 8px 28px rgba(232,83,58,.5)}
+.btn-hero-primary:hover{background:var(--accent-dim);transform:translateY(-2px);box-shadow:0 8px 28px rgba(37,99,235,.5)}
 .btn-hero-secondary{
   padding:12px 24px;border-radius:var(--r-lg);
   font-size:.88rem;font-weight:600;
@@ -328,7 +328,7 @@ img{max-width:100%;display:block}
 }
 .cta-section::before{
   content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse 70% 70% at 50% 50%,rgba(232,83,58,.15) 0%,transparent 70%);
+  background:radial-gradient(ellipse 70% 70% at 50% 50%,rgba(37,99,235,.15) 0%,transparent 70%);
 }
 .cta-section * {position:relative;z-index:1}
 .cta-title{
@@ -443,7 +443,7 @@ footer{
         <div class="dm-stat"><div class="dm-stat-v" style="color:#2563EB">5</div><div class="dm-stat-l">Pending Lab</div></div>
         <div class="dm-stat"><div class="dm-stat-v" style="color:#D97706">3</div><div class="dm-stat-l">Surgeries</div></div>
         <div class="dm-row">
-          <div class="dm-row-av" style="background:linear-gradient(135deg,#E8533A,#ff8c6e)"></div>
+          <div class="dm-row-av" style="background:linear-gradient(135deg,#2563EB,#60a5fa)"></div>
           <div class="dm-row-lines"><div class="dm-line" style="width:70%"></div><div class="dm-line" style="width:45%"></div></div>
           <div class="dm-badge" style="background:rgba(13,143,122,.1);color:#0D8F7A">With Doctor</div>
         </div>

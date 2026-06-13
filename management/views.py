@@ -14,6 +14,10 @@ from .models import ConsultingRoom, SPECIALIZATIONS, User
 
 logger = logging.getLogger(__name__)
 
+def home(request):
+    if request.user.is_authenticated:
+        return redirect('/dashboard/')
+    return render(request, 'landing.html')
 
 def _render_signup(request, status=200):
     return render(request, 'signup.html', {'specializations': SPECIALIZATIONS}, status=status)
@@ -57,7 +61,7 @@ def login_view(request):
 
         login(request, user)
         request.session.cycle_key()
-        return redirect('dashboard')
+        return redirect('dashboard_home')
 
     return render(request, 'login.html')
 
@@ -150,7 +154,7 @@ def dashboard(request):
 @login_required
 def doctor_dashboard(request):
     if not _is_role(request.user, 'doctor'):
-        return redirect('dashboard')
+        return redirect('dashboard_home')
 
     from records.models import PatientVisit, WardAdmission
 
@@ -350,7 +354,7 @@ def delete_prescription(request, rx_id):
 @login_required
 def nurse_dashboard(request):
     if not _is_role(request.user, 'nurse'):
-        return redirect('dashboard')
+        return redirect('dashboard_home')
 
     from records.models import PatientVisit
 
@@ -432,7 +436,7 @@ def nurse_delete_history(request, visit_id):
 @login_required
 def nurse_history(request):
     if not _is_role(request.user, 'nurse'):
-        return redirect('dashboard')
+        return redirect('dashboard_home')
 
     from records.models import PatientVisit
 
@@ -449,7 +453,7 @@ def nurse_history(request):
 @login_required
 def receptionist_dashboard(request):
     if not _is_role(request.user, 'receptionist'):
-        return redirect('dashboard')
+        return redirect('dashboard_home')
 
     from records.models import PatientVisit
 
@@ -598,7 +602,7 @@ def create_visit(request):
 @login_required
 def patient_dashboard(request):
     if not _is_role(request.user, 'patient'):
-        return redirect('dashboard')
+        return redirect('dashboard_home')
 
     from records.models import PatientVisit, Surgery
 
@@ -643,7 +647,7 @@ def patient_dashboard(request):
 @login_required
 def patient_records(request):
     if not _is_role(request.user, 'patient'):
-        return redirect('dashboard')
+        return redirect('dashboard_home')
 
     from records.models import PatientVisit
 
@@ -666,7 +670,7 @@ def patient_records(request):
 @login_required
 def patient_profile(request):
     if not _is_role(request.user, 'patient'):
-        return redirect('dashboard')
+        return redirect('dashboard_home')
 
     if request.method == 'POST':
         u = request.user
@@ -762,7 +766,7 @@ def update_visit_summary(request, visit_id):
 @login_required
 def doctor_history(request):
     if not _is_role(request.user, 'doctor'):
-        return redirect('dashboard')
+        return redirect('dashboard_home')
 
     from records.models import PatientVisit
 
@@ -783,7 +787,7 @@ def doctor_history(request):
 @login_required
 def pharmacist_history(request):
     if not _is_role(request.user, 'pharmacist'):
-        return redirect('dashboard')
+        return redirect('dashboard_home')
 
     from pharmacy.models import Prescription
 
@@ -799,7 +803,7 @@ def pharmacist_history(request):
 @login_required
 def lab_attendant_history(request):
     if not _is_role(request.user, 'lab_attendant'):
-        return redirect('dashboard')
+        return redirect('dashboard_home')
 
     from lab.models import LabRequest
 
@@ -815,7 +819,7 @@ def lab_attendant_history(request):
 @login_required
 def accountant_history(request):
     if not _is_role(request.user, 'accountant'):
-        return redirect('dashboard')
+        return redirect('dashboard_home')
 
     from accounting.models import Payment
 
@@ -830,7 +834,7 @@ def accountant_history(request):
 @login_required
 def ward_dashboard(request):
     if request.user.role not in ['nurse', 'doctor']:
-        return redirect('dashboard')
+        return redirect('dashboard_home')
 
     from records.models import WARD_CHOICES, WardAdmission
 
@@ -992,7 +996,7 @@ def void_admission_prescription(request, rx_id):
 @login_required
 def download_visit_summary(request, visit_id):
     if not _is_role(request.user, 'patient'):
-        return redirect('dashboard')
+        return redirect('dashboard_home')
 
     from records.models import PatientVisit
 
