@@ -1,30 +1,32 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Sign In — Rhudesi Hospital</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
-:root,[data-theme="light"]{
-  --bg:#F7F8FA;--surface:#FFFFFF;--surface2:#F0F1F5;--border:#E2E4EA;--border2:#D0D3DC;
-  --text:#0E1117;--text2:#4B5060;--text3:#8B909F;
-  --accent:#2563EB;--accent-dim:#1D4ED8;--accent-light:rgba(37,99,235,.1);--accent-border:rgba(37,99,235,.28);
-  --teal:#0D8F7A;--teal-light:rgba(13,143,122,.1);--teal-border:rgba(13,143,122,.28);
-  --red:#DC2626;--red-light:rgba(220,38,38,.1);
-  --r:8px;--r-md:10px;--r-lg:14px;--r-xl:20px;--r-full:999px;
-  --shadow:0 4px 20px rgba(0,0,0,.08);--shadow-lg:0 20px 60px rgba(0,0,0,.12);
+:root,[data-theme="dark"]{
+  --bg:#111113;--surface:#18181b;--surface2:#212126;--border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+  --text:#eeede6;--text2:#a3a29c;--text3:#585753;
+  --accent:#3b82f6;--accent-dim:#2563eb;--accent-light:rgba(59,130,246,.14);--accent-border:rgba(59,130,246,.3);
+  --teal:#10b981;--teal-light:rgba(16,185,129,.12);--teal-border:rgba(16,185,129,.3);
+  --red:#e05c5c;--red-light:rgba(224,92,92,.12);
+  --r:5px;--r-md:9px;--r-lg:13px;--r-xl:13px;--r-full:999px;
+  --shadow:0 2px 12px rgba(0,0,0,.45);--shadow-lg:0 8px 32px rgba(0,0,0,.55);
 }
-[data-theme="dark"]{
-  --bg:#0C0E13;--surface:#161920;--surface2:#1C1F28;--border:#272B38;--border2:#303547;
-  --text:#E8EAF0;--text2:#8990A8;--text3:#50566B;
-  --accent:#3B82F6;--accent-dim:#2563EB;
-  --teal:#10B899;
-  --shadow:0 4px 20px rgba(0,0,0,.4);--shadow-lg:0 20px 60px rgba(0,0,0,.6);
+[data-theme="light"]{
+  --bg:#f4f4f5;--surface:#ffffff;--surface2:#f0f0f3;--border:rgba(0,0,0,.08);--border2:rgba(0,0,0,.14);
+  --text:#111113;--text2:#52525b;--text3:#a1a1aa;
+  --accent:#2563eb;--accent-dim:#1d4ed8;--accent-light:rgba(37,99,235,.1);--accent-border:rgba(37,99,235,.28);
+  --teal:#0d8f7a;--teal-light:rgba(13,143,122,.1);--teal-border:rgba(13,143,122,.28);
+  --red:#dc2626;--red-light:rgba(220,38,38,.1);
+  --shadow:0 2px 12px rgba(0,0,0,.08);--shadow-lg:0 8px 32px rgba(0,0,0,.12);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:14px;-webkit-font-smoothing:antialiased;background:var(--bg);color:var(--text);transition:background .2s,color .2s;line-height:1.6}
+html{font-size:15px}
+html,body{height:100%;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:var(--bg);color:var(--text);transition:background .2s,color .2s;line-height:1.6}
 
 /* Grid layout */
 .login-wrap{
@@ -79,14 +81,14 @@ html,body{height:100%;font-family:'IBM Plex Sans',system-ui,sans-serif;font-size
   font-size:1.6rem;font-weight:700;color:#fff;
   line-height:1.35;letter-spacing:-.3px;margin-bottom:16px;
 }
-.art-quote em{color:#E8533A;font-style:normal}
+.art-quote em{color:var(--accent);font-style:normal}
 .art-sub{font-size:.88rem;color:rgba(255,255,255,.5);line-height:1.6;max-width:340px}
 
 .art-stats{
   display:flex;gap:32px;margin-top:32px;
 }
 .art-stat-v{
-  font-family:'IBM Plex Mono',monospace;
+  font-family:'JetBrains Mono',monospace;
   font-size:1.5rem;font-weight:600;color:#fff;line-height:1;margin-bottom:3px;
 }
 .art-stat-l{font-size:.72rem;color:rgba(255,255,255,.4);font-weight:600;letter-spacing:.4px;text-transform:uppercase}

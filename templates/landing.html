@@ -1,32 +1,33 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Rhudesi Hospital — Intelligent Healthcare Management</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#F7F8FA;--surface:#fff;--surface2:#F0F1F5;--border:#E2E4EA;
-  --text:#0E1117;--text2:#4B5060;--text3:#8B909F;
-  --accent:#2563EB;--accent-dim:#1D4ED8;--accent-light:rgba(37,99,235,.1);--accent-border:rgba(37,99,235,.28);
-  --teal:#0D8F7A;--teal-light:rgba(13,143,122,.1);--teal-border:rgba(13,143,122,.28);
-  --amber:#D97706;--amber-light:rgba(217,119,6,.09);
-  --r:8px;--r-md:12px;--r-lg:16px;--r-xl:22px;--r-full:999px;
-  --nav-h:64px;
-  --shadow:0 4px 20px rgba(0,0,0,.08);--shadow-lg:0 20px 60px rgba(0,0,0,.12);
+:root,[data-theme="dark"]{
+  --bg:#111113;--surface:#18181b;--surface2:#212126;--border:rgba(255,255,255,.07);
+  --text:#eeede6;--text2:#a3a29c;--text3:#585753;
+  --accent:#3b82f6;--accent-dim:#2563eb;--accent-light:rgba(59,130,246,.14);--accent-border:rgba(59,130,246,.3);
+  --teal:#10b981;--teal-light:rgba(16,185,129,.12);--teal-border:rgba(16,185,129,.3);
+  --amber:#f59e0b;--amber-light:rgba(245,158,11,.12);
+  --r:5px;--r-md:9px;--r-lg:13px;--r-xl:13px;--r-full:999px;
+  --nav-h:60px;
+  --shadow:0 2px 12px rgba(0,0,0,.45);--shadow-lg:0 8px 32px rgba(0,0,0,.55);
 }
-[data-theme="dark"]{
-  --bg:#0C0E13;--surface:#161920;--surface2:#1C1F28;--border:#272B38;
-  --text:#E8EAF0;--text2:#8990A8;--text3:#50566B;
-  --accent:#3B82F6;--accent-dim:#2563EB;
-  --teal:#10B899;
-  --shadow:0 4px 20px rgba(0,0,0,.4);--shadow-lg:0 20px 60px rgba(0,0,0,.6);
+[data-theme="light"]{
+  --bg:#f4f4f5;--surface:#ffffff;--surface2:#f0f0f3;--border:rgba(0,0,0,.08);
+  --text:#111113;--text2:#52525b;--text3:#a1a1aa;
+  --accent:#2563eb;--accent-dim:#1d4ed8;--accent-light:rgba(37,99,235,.1);--accent-border:rgba(37,99,235,.28);
+  --teal:#0d8f7a;--teal-light:rgba(13,143,122,.1);--teal-border:rgba(13,143,122,.28);
+  --amber:#d97706;--amber-light:rgba(217,119,6,.09);
+  --shadow:0 2px 12px rgba(0,0,0,.08);--shadow-lg:0 8px 32px rgba(0,0,0,.12);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{font-family:'IBM Plex Sans',sans-serif;font-size:15px;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.6;transition:background .2s,color .2s}
+html{scroll-behavior:smooth;font-size:15px}
+body{font-family:'Inter',sans-serif;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.6;transition:background .2s,color .2s}
 a{color:inherit;text-decoration:none}
 img{max-width:100%;display:block}
 
@@ -114,15 +115,15 @@ img{max-width:100%;display:block}
 .hero-eyebrow-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
 .hero-title{
-  font-family:'IBM Plex Serif',serif;
+  font-family:'Inter',sans-serif;
   font-size:clamp(2.4rem,5vw,3.8rem);
-  font-weight:600;line-height:1.15;
+  font-weight:700;line-height:1.15;
   letter-spacing:-.5px;margin-bottom:20px;
   color:var(--text);
 }
 .hero-title em{
   font-style:italic;color:var(--accent);
-  font-family:'IBM Plex Serif',serif;
+  font-family:'Inter',sans-serif;
 }
 .hero-subtitle{
   font-size:1.05rem;color:var(--text2);line-height:1.7;
@@ -174,7 +175,7 @@ img{max-width:100%;display:block}
 .dm-dot{width:8px;height:8px;border-radius:50%}
 .dm-content{padding:16px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .dm-stat{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px}
-.dm-stat-v{font-family:'IBM Plex Mono',monospace;font-size:1.2rem;font-weight:600;margin-bottom:2px}
+.dm-stat-v{font-family:'JetBrains Mono',monospace;font-size:1.2rem;font-weight:600;margin-bottom:2px}
 .dm-stat-l{font-size:.6rem;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
 .dm-row{grid-column:span 4;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;display:flex;gap:10px;align-items:center}
 .dm-row-av{width:26px;height:26px;border-radius:50%;flex-shrink:0}
@@ -190,9 +191,9 @@ img{max-width:100%;display:block}
   color:var(--accent);margin-bottom:12px;
 }
 .section-title{
-  font-family:'IBM Plex Serif',serif;
+  font-family:'Inter',sans-serif;
   font-size:clamp(1.8rem,3vw,2.6rem);
-  font-weight:600;line-height:1.25;color:var(--text);
+  font-weight:700;line-height:1.25;color:var(--text);
   letter-spacing:-.3px;margin-bottom:14px;
 }
 .section-subtitle{font-size:.95rem;color:var(--text2);line-height:1.7}
@@ -230,7 +231,7 @@ img{max-width:100%;display:block}
 }
 .stat-item{text-align:center}
 .stat-number{
-  font-family:'IBM Plex Mono',monospace;
+  font-family:'JetBrains Mono',monospace;
   font-size:2.8rem;font-weight:600;color:#fff;
   letter-spacing:-1px;line-height:1;margin-bottom:6px;
 }
@@ -332,8 +333,8 @@ img{max-width:100%;display:block}
 }
 .cta-section * {position:relative;z-index:1}
 .cta-title{
-  font-family:'IBM Plex Serif',serif;
-  font-size:clamp(1.8rem,3vw,2.6rem);font-weight:600;
+  font-family:'Inter',sans-serif;
+  font-size:clamp(1.8rem,3vw,2.6rem);font-weight:700;
   color:#fff;margin-bottom:14px;letter-spacing:-.3px;
 }
 .cta-sub{font-size:.95rem;color:rgba(255,255,255,.6);margin-bottom:32px}
@@ -438,7 +439,7 @@ footer{
         <div class="dm-dot" style="background:#6BCB77"></div>
       </div>
       <div class="dm-content">
-        <div class="dm-stat"><div class="dm-stat-v" style="color:#E8533A">24</div><div class="dm-stat-l">Today's Visits</div></div>
+        <div class="dm-stat"><div class="dm-stat-v" style="color:#3b82f6">24</div><div class="dm-stat-l">Today's Visits</div></div>
         <div class="dm-stat"><div class="dm-stat-v" style="color:#0D8F7A">8</div><div class="dm-stat-l">In Ward</div></div>
         <div class="dm-stat"><div class="dm-stat-v" style="color:#2563EB">5</div><div class="dm-stat-l">Pending Lab</div></div>
         <div class="dm-stat"><div class="dm-stat-v" style="color:#D97706">3</div><div class="dm-stat-l">Surgeries</div></div>
