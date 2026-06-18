@@ -1,9 +1,10 @@
-/* ── Landing Page Styles ──────────────────────────────────────────────────
-   Loaded alongside style.css. Uses the same design tokens + aliases.
-   ─────────────────────────────────────────────────────────────────────── */
+/* Landing Page Styles */
 
 html { scroll-behavior: smooth; }
 a:hover { text-decoration: none; }
+html {
+  font-size: 16px;
+}
 
 /* ── NAV ── */
 .nav{
@@ -17,16 +18,20 @@ a:hover { text-decoration: none; }
   border-bottom:1px solid var(--border);
 }
 [data-theme="light"] .nav.scrolled{background:rgba(244,244,245,.88)}
-.nav-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1rem;letter-spacing:-.2px}
+
+.nav-logo{display:flex;align-items:center;gap:11px;font-weight:800;font-size:1.15rem;letter-spacing:-.5px}
 .nav-logo-mark{
-  width:32px;height:32px;border-radius:var(--radius-sm);flex-shrink:0;
+  width:38px;height:38px;border-radius:var(--radius);flex-shrink:0;
   background:var(--accent);
   display:flex;align-items:center;justify-content:center;
-  font-size:.85rem;font-weight:800;color:#111113;
+  font-size:1rem;font-weight:900;color:#111113;
+  letter-spacing:-.5px;
 }
-.nav-links{display:flex;align-items:center;gap:28px;margin-left:44px}
+
+.nav-links{display:flex;align-items:center;gap:28px;margin-left:48px}
 .nav-links a{font-size:.85rem;font-weight:500;color:var(--text-2);transition:.15s}
 .nav-links a:hover{color:var(--text)}
+
 .nav-right{margin-left:auto;display:flex;align-items:center;gap:10px}
 .nav-theme{
   width:34px;height:34px;border-radius:var(--radius-sm);
@@ -35,6 +40,7 @@ a:hover { text-decoration: none; }
   transition:.15s;color:var(--text-2);
 }
 .nav-theme:hover{background:var(--bg-hover)}
+
 .nav-login{
   padding:8px 16px;border-radius:var(--radius-sm);
   font-size:.83rem;font-weight:600;
@@ -42,6 +48,7 @@ a:hover { text-decoration: none; }
   color:var(--text);cursor:pointer;transition:.15s;
 }
 .nav-login:hover{background:var(--bg-hover)}
+
 .nav-cta{
   padding:9px 18px;border-radius:var(--radius-sm);
   font-size:.83rem;font-weight:700;
@@ -50,11 +57,25 @@ a:hover { text-decoration: none; }
 }
 .nav-cta:hover{background:var(--accent-hover)}
 
-/* ── HERO (zoomed / SIWES-style) ── */
+/* HERO */
 .hero{
-  min-height:100vh;display:flex;align-items:center;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
   padding:calc(var(--nav-h) + 40px) 6% 60px;
-  position:relative;overflow:hidden;
+  position:relative;
+  overflow:hidden;
+
+  background:
+    linear-gradient(
+      rgba(17,17,19,.75),
+      rgba(17,17,19,.75)
+    ),
+    url("../img/doc.jpg");
+
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
 }
 .hero-dots{
   position:absolute;inset:0;z-index:0;

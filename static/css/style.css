@@ -1,8 +1,6 @@
-/* ── Rhudesi Hospital Design System ─────────────────────────────────────────
-   Inspired by CollabNotes: dark editorial, Inter UI, tight & clean.
-   ───────────────────────────────────────────────────────────────────────── */
+/* Rhudesi Hospital Design System  by CollabNotes: dark editorial, Inter UI, tight & clean. */
 
-/* ── Variables ── */
+/* Variables */
 :root {
   --bg:            #111113;
   --bg-surface:    #18181b;
@@ -90,7 +88,7 @@
 
 /* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: 15px; -webkit-font-smoothing: antialiased; }
+html { font-size: 17px; -webkit-font-smoothing: antialiased; }
 body {
   font-family: var(--font-ui);
   background: var(--bg);

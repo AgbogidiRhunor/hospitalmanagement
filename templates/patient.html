@@ -447,6 +447,5 @@ async function declineSurg(id){
   if(r.status==='ok'){R.toast('Surgery declined','ok');R.modal('srev'+id,false);location.reload();}
   else R.toast(r.error||'Could not decline','err');
 }
-setTimeout(() => location.reload(), 45000);
 </script>
 {% endblock %}
