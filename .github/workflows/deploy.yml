@@ -25,26 +25,32 @@ jobs:
 
             cd ~/hospitalmanagement
 
-            # Pull latest code safely
+            # Ensure latest code
             git fetch origin main
             git reset --hard origin/main
 
-            # Activate virtual environment
+            # Ensure venv exists (THIS is the fix)
+            if [ ! -d "venv" ]; then
+                echo "⚠️ venv not found. Creating..."
+                python3 -m venv venv
+            fi
+
+            # Activate venv
             source venv/bin/activate
 
-            # Install dependencies
+            # Upgrade pip + install deps
+            pip install --upgrade pip
             pip install -r requirements.txt
 
             # Django operations
             python manage.py migrate --noinput
             python manage.py collectstatic --noinput
 
-            # Restart services (IMPORTANT: restart, not reload)
+            # Restart services
             sudo systemctl restart gunicorn
             sudo systemctl restart nginx
 
             echo "✅ Deployment successful"
 
             # Health check
-            echo "🔍 Checking site..."
             curl -I https://hospitalmanagement.xyz || true
