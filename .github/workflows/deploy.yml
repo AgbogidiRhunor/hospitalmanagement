@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Deploy to EC2 via SSH
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
@@ -19,9 +19,9 @@ jobs:
           script: |
             set -e
 
-            echo "Deploying..."
+            echo "🚀 Deploying..."
 
-            cd ~/hospitalmanagement || exit 1
+            cd ~/hospitalmanagement
 
             git pull origin main
 
@@ -29,9 +29,10 @@ jobs:
 
             pip install -r requirements.txt
 
+            python manage.py migrate --noinput
             python manage.py collectstatic --noinput
 
             sudo systemctl restart gunicorn
             sudo systemctl restart nginx
 
-            echo "Deployment successful"
+            echo "✅ Deployment successful"
