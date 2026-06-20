@@ -23,7 +23,8 @@ jobs:
 
             cd ~/hospitalmanagement
 
-            git pull origin main
+            git fetch origin main
+            git reset --hard origin/main
 
             source venv/bin/activate
 
@@ -32,7 +33,10 @@ jobs:
             python manage.py migrate --noinput
             python manage.py collectstatic --noinput
 
-            sudo systemctl restart gunicorn
-            sudo systemctl restart nginx
+            sudo systemctl reload gunicorn
+            sudo systemctl reload nginx
 
             echo "✅ Deployment successful"
+
+            echo "🔍 Checking site..."
+            curl -I https://hospitalmanagement.xyz || true
