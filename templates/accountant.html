@@ -7,7 +7,7 @@
 {% block nav %}
 <a href="{% url 'accountant_dashboard' %}" class="sb-item active">
   <span class="sb-icon">💳</span> Pending
-  <span class="sb-badge {% if not pending %}muted{% endif %}" id="pendBadge">{{ pending|length }}</span>
+  <span class="sb-badge {% if not visit_sessions %}muted{% endif %}" id="pendBadge">{{ visit_sessions|length }}</span>
 </a>
 <a href="{% url 'accountant_history' %}" class="sb-item">
   <span class="sb-icon">📂</span> History
@@ -29,289 +29,268 @@
 
 {% block content %}
 
-<div class="tabs">
-  <div class="tab active" data-group="ac" data-tab="acPend">
-    Pending
-    <span class="tab-count {% if pending %}b-amber{% endif %}" id="pendCount">{{ pending|length }}</span>
-  </div>
-  <div class="tab" data-group="ac" data-tab="acDone">
-    Processed
-    <span class="tab-count">{{ processed|length }}</span>
+{% if not visit_sessions %}
+<div class="card" id="allClearCard">
+  <div class="empty-state">
+    <div class="empty-icon">✓</div>
+    <div class="empty-title" style="color:var(--teal)">All caught up!</div>
+    <div class="empty-sub">No pending payments right now.</div>
   </div>
 </div>
+{% else %}
 
-<!-- ═══ PENDING ═══ -->
-<div id="acPend" data-panel="ac" class="panel active">
-  {% if not pending %}
-  <div class="card" id="allClearCard">
-    <div class="empty-state">
-      <div class="empty-icon">✓</div>
-      <div class="empty-title" style="color:var(--teal)">All caught up!</div>
-      <div class="empty-sub">No pending payments right now.</div>
+<!-- Search bar -->
+<div style="margin-bottom:14px;position:relative">
+  <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:.9rem;pointer-events:none">🔍</span>
+  <input class="inp" id="sessionSearch" placeholder="Search patient name or visit number…"
+    style="padding-left:38px" oninput="filterSessions(this.value)">
+</div>
+
+<div id="sessionList">
+{% for session in visit_sessions %}
+{# Each session = one visit, all its payments grouped #}
+<div class="session-card visit-card" style="margin-bottom:10px"
+  data-patient="{{ session.patient_name|lower }}"
+  data-visit="{{ session.visit_id }}">
+
+  <!-- Session header (always visible, click to expand) -->
+  <div class="vc-header" onclick="toggleSession('sess{{ session.visit_id }}', 'sessch{{ session.visit_id }}')">
+    <div class="vc-queue" style="font-size:.65rem;background:var(--bg-elevated)">
+      #{{ session.visit_id }}
+    </div>
+    <div class="vc-info">
+      <div class="vc-name">
+        {{ session.patient_name }}
+        {% if session.has_unpaid %}
+        <span class="badge b-amber"><span class="badge-dot"></span>{{ session.unpaid_count }} pending</span>
+        {% else %}
+        <span class="badge b-teal">✓ All paid</span>
+        {% endif %}
+        {% if session.has_surgery %}<span class="badge b-purple">⚕ Surgery</span>{% endif %}
+        {% if session.has_admission %}<span class="badge b-teal">🛏 Ward</span>{% endif %}
+      </div>
+      <div class="vc-meta">
+        <span class="mono fw-7" style="color:{% if session.has_unpaid %}var(--amber){% else %}var(--teal){% endif %}">
+          ₦{{ session.total_pending|floatformat:0 }} pending
+        </span>
+        <span class="vc-meta-dot"></span>
+        <span class="text-muted">₦{{ session.total_paid|floatformat:0 }} paid</span>
+        <span class="vc-meta-dot"></span>
+        <span>{{ session.payment_count }} payment{{ session.payment_count|pluralize }}</span>
+        <span class="vc-meta-dot"></span>
+        <span>{{ session.started_at|date:"d M, H:i" }}</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 flex-shrink-0">
+      {% if session.has_unpaid %}
+      <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();confirmAllInSession({{ session.visit_id }}, this)">
+        Confirm All ✓
+      </button>
+      {% endif %}
+      <svg id="sessch{{ session.visit_id }}" width="14" height="14" viewBox="0 0 14 14" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        style="color:var(--text-muted);transition:transform .2s;flex-shrink:0">
+        <path d="M3 5l4 4 4-4"/>
+      </svg>
     </div>
   </div>
-  {% else %}
 
-  {% regroup pending by payment_group as payment_groups %}
-  {% for group in payment_groups %}
-
-    {% if group.grouper %}
-      {# ── GROUPED PAYMENT (Surgery or Admission bundle) ── #}
-      {% with items=group.list first=group.list.0 %}
-      {% with is_surg=group.grouper|slice:":7" %}
-      <div class="card" style="margin-bottom:12px;border-color:{% if is_surg == 'surgery' %}var(--purple-border){% else %}var(--teal-border){% endif %};overflow:visible">
-        <div class="card-header" style="cursor:pointer;background:{% if is_surg == 'surgery' %}var(--purple-light){% else %}var(--teal-light){% endif %}" onclick="toggleGroup('grp_{{ group.grouper|slugify }}')">
-          <div class="flex items-center gap-3 flex-1" style="min-width:0">
-            <div style="width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1rem;background:{% if is_surg == 'surgery' %}var(--purple-light){% else %}var(--teal-light){% endif %};border:1px solid {% if is_surg == 'surgery' %}var(--purple-border){% else %}var(--teal-border){% endif %}">
-              {% if is_surg == 'surgery' %}⚕{% else %}🛏{% endif %}
-            </div>
-            <div style="min-width:0">
-              <div class="flex items-center gap-2 flex-wrap">
-                <span class="fw-7 text-sm">{{ first.patient.display_name }}</span>
-                <span class="badge {% if is_surg == 'surgery' %}b-purple{% else %}b-teal{% endif %}">
-                  {% if is_surg == 'surgery' %}⚕ Surgery Bundle{% else %}🛏 Admission{% endif %}
-                </span>
-                {% if first.surgery %}<span class="badge b-gray">{{ first.surgery.procedure_name|truncatechars:22 }}</span>{% endif %}
-              </div>
-              <div class="text-xs text-muted mt-1">
-                {{ items|length }} payment(s) · Visit #{{ first.visit.id }} · {{ first.created_at|date:"d M" }}
-              </div>
-            </div>
+  <!-- Session body: all payments for this visit -->
+  <div class="vc-body" id="sess{{ session.visit_id }}">
+    {% for pay in session.payments %}
+    <div id="prow{{ pay.id }}" style="padding:11px 14px;border-top:1px solid var(--border);{% if pay.is_paid %}opacity:.5{% endif %}">
+      <div class="flex items-center gap-3" style="flex-wrap:wrap">
+        <div style="flex:1;min-width:0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="fw-6 text-sm">{{ pay.get_payment_type_display }}</span>
+            {% if pay.total_parts > 1 %}<span class="badge b-blue">Part {{ pay.part_number }}/{{ pay.total_parts }}</span>{% endif %}
+            {% if pay.surgery %}<span class="badge b-purple">⚕</span>{% endif %}
+            {% if pay.admission and not pay.surgery %}<span class="badge b-teal">🛏</span>{% endif %}
+            {% if pay.is_paid %}<span class="badge b-teal">✓ Paid</span>{% endif %}
           </div>
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--text3);flex-shrink:0">
-            <path d="M3 5l4 4 4-4"/>
-          </svg>
-        </div>
 
-        <div id="grp_{{ group.grouper|slugify }}">
-          {% for pay in items %}
-          <div id="pcard{{ pay.id }}" style="border-top:1px solid var(--border);{% if pay.is_paid %}opacity:.5{% endif %}">
-            <div class="flex items-center gap-3" style="padding:12px 18px;flex-wrap:wrap">
-              <div style="flex:1;min-width:0">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="fw-6 text-sm">{{ pay.get_payment_type_display }}</span>
-                  {% if pay.total_parts > 1 %}<span class="badge b-blue">Part {{ pay.part_number }}/{{ pay.total_parts }}</span>{% endif %}
-                  {% if pay.is_paid %}<span class="badge b-green">✓ Paid</span>{% endif %}
-                </div>
-                <div class="flex items-center gap-2 mt-1">
-                  <span class="mono fw-7" style="color:var(--amber);font-size:.9rem">₦{{ pay.amount|floatformat:0 }}</span>
-                  {% if pay.prescription %}<span class="text-xs text-muted">· {{ pay.prescription.drugs.count }} drug(s)</span>{% endif %}
-                  {% if pay.lab_request %}<span class="text-xs text-muted">· {{ pay.lab_request.tests.count }} test(s)</span>{% endif %}
-                </div>
-                {% if pay.prescription %}
-                <div style="margin-top:6px">
-                  {% for item in pay.prescription.drugs.all %}
-                  <div class="flex justify-between text-xs text-muted">
-                    <span>{{ item.drug.name }} ×{{ item.quantity }}{% if item.dosage %} — {{ item.dosage }}{% endif %}</span>
-                    <span class="mono">₦{{ item.price_at_time|floatformat:0 }}</span>
-                  </div>
-                  {% endfor %}
-                </div>
-                {% endif %}
-                {% if pay.lab_request %}
-                <div style="margin-top:6px">
-                  {% for t in pay.lab_request.tests.all %}
-                  <div class="flex justify-between text-xs text-muted">
-                    <span>{{ t.test.name }}</span>
-                    <span class="mono">₦{{ t.price_at_time|floatformat:0 }}</span>
-                  </div>
-                  {% endfor %}
-                </div>
-                {% endif %}
-              </div>
-              {% if not pay.is_paid %}
-              <button class="btn btn-primary btn-sm flex-shrink-0" onclick="confirmPay({{ pay.id }},this)">Confirm ✓</button>
-              {% endif %}
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-      </div>
-      {% endwith %}
-      {% endwith %}
-
-    {% else %}
-      {# ── STANDALONE PAYMENT ── #}
-      {% for pay in group.list %}
-      <div class="visit-card payment-card" id="pcard{{ pay.id }}" style="border-color:var(--amber-border);margin-bottom:10px">
-        <div class="vc-header" onclick="toggleVc('pd{{ pay.id }}','ch{{ pay.id }}')">
-          <div class="vc-queue" style="background:var(--amber-light);color:var(--amber);border-color:var(--amber-border);font-size:.72rem">₦</div>
-          <div class="vc-info">
-            <div class="vc-name">
-              {{ pay.patient.display_name }}
-              <span class="badge b-amber">{{ pay.get_payment_type_display }}</span>
-              {% if pay.surgery %}<span class="badge b-purple">⚕ Surgery</span>{% endif %}
-              {% if pay.admission and not pay.surgery %}<span class="badge b-teal">🛏 Ward</span>{% endif %}
-            </div>
-            <div class="vc-meta">
-              <span class="mono fw-7" style="color:var(--amber)">₦{{ pay.amount|floatformat:0 }}</span>
-              <span class="vc-meta-dot"></span>
-              <span>Visit #{{ pay.visit.id }}</span>
-              <span class="vc-meta-dot"></span>
-              <span>{{ pay.created_at|date:"d M, H:i" }}</span>
-            </div>
-          </div>
-          <div class="flex items-center gap-2 flex-shrink-0" onclick="event.stopPropagation()">
-            <button class="btn btn-primary btn-sm" onclick="confirmPay({{ pay.id }},this)">Confirm ✓</button>
-            <svg id="ch{{ pay.id }}" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--text3);transition:transform .2s">
-              <path d="M3 5l4 4 4-4"/>
-            </svg>
-          </div>
-        </div>
-
-        <div class="vc-body" id="pd{{ pay.id }}">
+          <!-- Payment details -->
           {% if pay.prescription %}
-          <div class="section-label">
-            Drug Items
-            {% if pay.surgery %}<span class="badge b-purple">⚕ Surgery</span>{% elif pay.admission %}<span class="badge b-teal">🛏 Admission</span>{% endif %}
-          </div>
-          {% for item in pay.prescription.drugs.all %}
-          <div class="drug-row">
-            <div class="drug-name">
-              {{ item.drug.name }}{% if item.drug.strength %} <span class="text-muted">({{ item.drug.strength }})</span>{% endif %}
-              <span class="drug-meta">{{ item.dosage }} · ×{{ item.quantity }}</span>
+          <div style="margin-top:5px">
+            {% for item in pay.prescription.drugs.all %}
+            <div class="flex justify-between text-xs text-muted">
+              <span>{{ item.drug.name }} ×{{ item.quantity }}{% if item.dosage %} — {{ item.dosage }}{% endif %}</span>
+              <span class="mono">₦{{ item.price_at_time|floatformat:0 }}</span>
             </div>
-            <span class="mono text-sm">₦{{ item.price_at_time|floatformat:0 }}</span>
+            {% endfor %}
           </div>
-          {% endfor %}
           {% endif %}
 
           {% if pay.lab_request %}
-          <div class="section-label">
-            Lab Tests
-            {% if pay.surgery %}<span class="badge b-purple">⚕ Surgery</span>{% elif pay.admission %}<span class="badge b-teal">🛏 Admission</span>{% endif %}
-          </div>
-          {% for t in pay.lab_request.tests.all %}
-          <div class="drug-row">
-            <div class="drug-name">{{ t.test.name }}</div>
-            <span class="mono text-sm">₦{{ t.price_at_time|floatformat:0 }}</span>
-          </div>
-          {% endfor %}
-          {% endif %}
-
-          {% if pay.admission and pay.payment_type == 'admission' %}
-          <div class="section-label">Admission Details</div>
-          <div class="drug-row">
-            <div class="drug-name">
-              {{ pay.admission.get_ward_display }} — Bed {{ pay.admission.bed_number }}
-              <span class="drug-meta">{{ pay.admission.admission_reason|truncatechars:60 }}</span>
+          <div style="margin-top:5px">
+            {% for t in pay.lab_request.tests.all %}
+            <div class="flex justify-between text-xs text-muted">
+              <span>{{ t.test.name }}</span>
+              <span class="mono">₦{{ t.price_at_time|floatformat:0 }}</span>
             </div>
-            <span class="badge b-amber">₦{{ pay.amount|floatformat:0 }}</span>
+            {% endfor %}
           </div>
           {% endif %}
 
-          {% if pay.admission and pay.payment_type == 'admission_medication' %}
-          <div class="section-label">Ward Medication <span class="badge b-teal">🛏 Ward Rx</span></div>
-          {% for rx in pay.admission.prescriptions.all %}{% if rx.status == 'active' %}
-          {% for item in rx.items.all %}
-          <div class="drug-row">
-            <div class="drug-name">
-              {{ item.drug_name }}{% if item.drug.strength %} <span class="text-muted">({{ item.drug.strength }})</span>{% endif %}{% if item.drug.dosage_form %} <span class="text-xs text-muted">{{ item.drug.dosage_form }}</span>{% endif %}
-              <span class="drug-meta">×{{ item.quantity }}{% if item.dosage %} — {{ item.dosage }}{% endif %}</span>
-            </div>
-            <span class="mono text-sm">₦{{ item.price|floatformat:0 }}</span>
+          {% if pay.payment_type == 'admission' and pay.admission %}
+          <div class="text-xs text-muted mt-1">
+            {{ pay.admission.ward.name|default:"Ward" }} · Bed {{ pay.admission.bed_number }}
+            {% if pay.admission.admission_reason %} — {{ pay.admission.admission_reason|truncatechars:50 }}{% endif %}
           </div>
-          {% endfor %}
-          {% endif %}{% endfor %}
+          {% endif %}
+
+          {% if pay.payment_type == 'consultation' %}
+          <div class="text-xs text-muted mt-1">Consultation fee</div>
+          {% endif %}
+        </div>
+
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <span class="mono fw-7" style="color:{% if pay.is_paid %}var(--teal){% else %}var(--amber){% endif %};font-size:.95rem">
+            ₦{{ pay.amount|floatformat:0 }}
+          </span>
+          {% if not pay.is_paid %}
+          <button class="btn btn-primary btn-sm" onclick="confirmPay({{ pay.id }}, this, {{ session.visit_id }})">
+            Confirm ✓
+          </button>
+          {% else %}
+          <a href="/accounting/receipt/{{ pay.id }}/print/" target="_blank" class="btn btn-ghost btn-xs">🖨</a>
           {% endif %}
         </div>
       </div>
-      {% endfor %}
-    {% endif %}
+    </div>
+    {% endfor %}
 
-  {% endfor %}
-  {% endif %}
-</div>
-
-<!-- ═══ PROCESSED ═══ -->
-<div id="acDone" data-panel="ac" class="panel">
-  {% if not processed %}
-  <div class="card">
-    <div class="empty-state">
-      <div class="empty-icon">📂</div>
-      <div class="empty-title">No processed payments yet</div>
+    <!-- Session total footer -->
+    <div style="padding:10px 14px;background:var(--bg-elevated);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <span class="text-xs text-muted">Session total</span>
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-muted">Paid: <span class="mono fw-6 text-teal" id="sess_paid_{{ session.visit_id }}">₦{{ session.total_paid|floatformat:0 }}</span></span>
+        <span class="text-xs text-muted">Pending: <span class="mono fw-6 text-amber" id="sess_pend_{{ session.visit_id }}">₦{{ session.total_pending|floatformat:0 }}</span></span>
+        <span class="text-xs fw-7" style="color:var(--text)">Total: <span class="mono">₦{{ session.total_all|floatformat:0 }}</span></span>
+      </div>
     </div>
   </div>
-  {% else %}
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Patient</th>
-          <th>Type</th>
-          <th>Amount</th>
-          <th>Paid At</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for pay in processed %}
-        <tr>
-          <td>{{ pay.patient.display_name }}</td>
-          <td>
-            <div class="flex items-center gap-2">
-              <span class="badge b-green">{{ pay.get_payment_type_display }}</span>
-              {% if pay.total_parts > 1 %}<span class="badge b-blue">Part {{ pay.part_number }}/{{ pay.total_parts }}</span>{% endif %}
-              {% if pay.surgery %}<span class="badge b-purple">⚕</span>{% endif %}
-            </div>
-          </td>
-          <td class="mono fw-7 text-teal">₦{{ pay.amount|floatformat:0 }}</td>
-          <td class="text-xs text-muted">{{ pay.paid_at|date:"d M, H:i" }}</td>
-          <td>
-            {% if pay.total_parts == 1 or pay.part_number == pay.total_parts %}
-            <a href="/accounting/receipt/{{ pay.id }}/print/" target="_blank" class="btn btn-ghost btn-xs">🖨 Receipt</a>
-            {% else %}
-            <span class="text-xs text-muted">Part {{ pay.part_number }}/{{ pay.total_parts }}</span>
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% endif %}
 </div>
+{% endfor %}
+</div>
+
+{% endif %}
 
 {% endblock %}
 
 {% block js %}
 <script>
-function toggleVc(bodyId, chevronId){
-  const body = document.getElementById(bodyId);
-  const ch = document.getElementById(chevronId);
-  if(body){ const open = body.classList.toggle('open'); if(ch) ch.style.transform = open ? 'rotate(180deg)' : ''; }
-}
-function toggleGroup(id){
-  const el = document.getElementById(id);
-  if(el) el.classList.toggle('hidden');
+// Toggle session expand
+function toggleSession(bodyId, chevId){
+  const b=document.getElementById(bodyId), c=document.getElementById(chevId);
+  if(!b) return;
+  const open=b.classList.toggle('open');
+  if(c) c.style.transform=open?'rotate(180deg)':'';
 }
 
+// Search filter
+function filterSessions(q){
+  q=q.toLowerCase().trim();
+  document.querySelectorAll('.session-card').forEach(card=>{
+    const name=card.dataset.patient||'';
+    const vid=card.dataset.visit||'';
+    card.style.display=(!q||name.includes(q)||vid.includes(q))?'':'none';
+  });
+}
+
+// Toggle on-sit
 async function toggleField(field, el){
-  const r = await R.post('/api/toggle-availability/', {field});
-  if(r.status === 'ok') R.toast(r.value ? 'On sit' : 'Off sit', 'ok');
-  else { R.toast(r.error||'Error','err'); el.checked = !el.checked; }
+  const r=await R.post('/api/toggle-availability/',{field});
+  if(r.status==='ok') R.toast(r.value?'On sit':'Off sit','ok');
+  else{ R.toast(r.error||'Error','err'); el.checked=!el.checked; }
 }
 
-async function confirmPay(id, btn){
-  btn.disabled = true; btn.textContent = '…';
-  const r = await R.post(`/accounting/confirm/${id}/`);
-  if(r.status === 'ok'){
-    R.toast('Payment confirmed!', 'ok');
-    const card = document.getElementById('pcard'+id);
-    if(card){
-      card.style.opacity = '.45';
-      card.style.borderColor = 'var(--teal-border)';
-      btn.remove();
+// Confirm single payment
+async function confirmPay(id, btn, visitId){
+  btn.disabled=true; btn.textContent='…';
+  const r=await R.post(`/accounting/confirm/${id}/`);
+  if(r.status==='ok'){
+    R.toast('Payment confirmed!','ok');
+    const row=document.getElementById('prow'+id);
+    if(row){
+      row.style.opacity='.45';
+      const confirmBtn=row.querySelector('.btn-primary');
+      if(confirmBtn){
+        // Replace button with receipt link
+        confirmBtn.outerHTML=`<a href="/accounting/receipt/${id}/print/" target="_blank" class="btn btn-ghost btn-xs">🖨</a>`;
+      }
+      // Add paid badge
+      const name=row.querySelector('.fw-6');
+      if(name){
+        const badge=document.createElement('span');
+        badge.className='badge b-teal';
+        badge.textContent='✓ Paid';
+        name.after(badge);
+      }
     }
-    const pendCount = document.getElementById('pendCount');
-    const pendBadge = document.getElementById('pendBadge');
-    if(pendCount){ const n = Math.max(0,(parseInt(pendCount.textContent)||1)-1); pendCount.textContent = n; }
-    if(pendBadge){ const n = Math.max(0,(parseInt(pendBadge.textContent)||1)-1); pendBadge.textContent = n; }
-    setTimeout(() => location.reload(), 1200);
+    updateSessionBadge(visitId);
+    setTimeout(()=>location.reload(),1500);
   } else {
-    btn.disabled = false; btn.textContent = 'Confirm ✓';
+    btn.disabled=false; btn.textContent='Confirm ✓';
     R.toast(r.error||'Error confirming','err');
   }
 }
+
+// Confirm all unpaid in session
+async function confirmAllInSession(visitId, btn){
+  btn.disabled=true; btn.textContent='Confirming…';
+  // Find all unpaid confirm buttons in this session
+  const sess=document.getElementById('sess'+visitId);
+  if(!sess){ btn.disabled=false; return; }
+  const payBtns=Array.from(sess.querySelectorAll('[onclick*="confirmPay"]'));
+  let confirmed=0;
+  for(const pb of payBtns){
+    const match=pb.getAttribute('onclick').match(/confirmPay\((\d+)/);
+    if(!match) continue;
+    const payId=match[1];
+    const r=await R.post(`/accounting/confirm/${payId}/`);
+    if(r.status==='ok'){
+      confirmed++;
+      const row=document.getElementById('prow'+payId);
+      if(row){ row.style.opacity='.45'; pb.remove(); }
+    }
+  }
+  if(confirmed>0){
+    R.toast(`${confirmed} payment(s) confirmed!`,'ok');
+    setTimeout(()=>location.reload(),1000);
+  } else {
+    btn.disabled=false; btn.textContent='Confirm All ✓';
+    R.toast('Nothing to confirm','warn');
+  }
+}
+
+function updateSessionBadge(visitId){
+  // Recount unpaid in session after a confirm
+  const sess=document.getElementById('sess'+visitId);
+  if(!sess) return;
+  const remaining=sess.querySelectorAll('[onclick*="confirmPay"]').length;
+  const header=sess.previousElementSibling; // vc-header
+  if(!header) return;
+  const badge=header.querySelector('.badge.b-amber');
+  if(remaining===0 && badge){
+    badge.className='badge b-teal';
+    badge.innerHTML='✓ All paid';
+    const confirmAllBtn=header.querySelector('.btn-primary');
+    if(confirmAllBtn) confirmAllBtn.remove();
+  } else if(badge){
+    badge.innerHTML=`<span class="badge-dot"></span>${remaining} pending`;
+  }
+}
+
+// Auto-expand sessions with unpaid items
+document.querySelectorAll('.session-card').forEach(card=>{
+  const badge=card.querySelector('.badge.b-amber');
+  if(badge){
+    const vid=card.dataset.visit;
+    const body=document.getElementById('sess'+vid);
+    const ch=document.getElementById('sessch'+vid);
+    if(body){ body.classList.add('open'); if(ch) ch.style.transform='rotate(180deg)'; }
+  }
+});
 </script>
 {% endblock %}

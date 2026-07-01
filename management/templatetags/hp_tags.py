@@ -101,3 +101,20 @@ def add_days(value, days):
         return value + timedelta(days=int(days))
     except Exception:
         return value
+
+import json
+
+@register.filter
+def jsonify_notes(notes_qs):
+    """Serialise a DoctorNote queryset to a JSON array for openNote() calls."""
+    try:
+        result = [
+            {
+                'note': n.note,
+                'created_at': n.created_at.strftime('%d %b %Y, %H:%M') if n.created_at else '',
+            }
+            for n in notes_qs
+        ]
+        return json.dumps(result)
+    except Exception:
+        return '[]'

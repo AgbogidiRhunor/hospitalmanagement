@@ -948,10 +948,6 @@ def ward_dashboard(request):
         is_available=True,
     )
 
-    print("Admissions:", admissions.count())
-    print("Wards:", ward_choices)
-
-
     ctx = {
         'nurse': request.user,
         'user': request.user,
