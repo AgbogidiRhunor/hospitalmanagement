@@ -10,22 +10,61 @@ from management.models import User
 @login_required
 def accountant_dashboard(request):
     if request.user.role != 'accountant':
-        return redirect('dashboard')
+        return redirect('dashboard_home')
+
     from django.db.models import Q
-    pending = Payment.objects.filter(
+    from collections import defaultdict
+
+    # Get all pending payments for this accountant (or unassigned)
+    pending_qs = Payment.objects.filter(
         Q(accountant=request.user) | Q(accountant__isnull=True),
         is_paid=False,
     ).select_related(
-        'patient', 'visit', 'lab_request', 'prescription', 'surgery', 'admission'
+        'patient', 'visit', 'lab_request', 'prescription',
+        'surgery', 'admission__ward',
     ).prefetch_related(
-        'prescription__drugs__drug', 'lab_request__tests__test',
-    ).order_by('payment_group', 'part_number', '-created_at')
+        'prescription__drugs__drug',
+        'lab_request__tests__test',
+    ).order_by('visit_id', 'payment_group', 'part_number', '-created_at')
+
+    # Group by visit_id so every payment a patient owes is under one card
+    visit_map = defaultdict(list)
+    for pay in pending_qs:
+        visit_map[pay.visit_id].append(pay)
+
+    visit_sessions = []
+    for visit_id, payments in visit_map.items():
+        unpaid = [p for p in payments if not p.is_paid]
+        paid   = [p for p in payments if p.is_paid]
+        first  = payments[0]
+        visit_sessions.append({
+            'visit_id':      visit_id,
+            'patient_name':  first.patient.display_name,
+            'payments':      payments,
+            'unpaid_count':  len(unpaid),
+            'has_unpaid':    bool(unpaid),
+            'total_pending': sum(float(p.amount) for p in unpaid),
+            'total_paid':    sum(float(p.amount) for p in paid),
+            'total_all':     sum(float(p.amount) for p in payments),
+            'payment_count': len(payments),
+            'has_surgery':   any(p.surgery_id for p in payments),
+            'has_admission': any(p.admission_id for p in payments),
+            'started_at':    first.created_at,
+        })
+
+    # Sort: sessions with unpaid first, then by creation time
+    visit_sessions.sort(key=lambda s: (not s['has_unpaid'], s['started_at']))
 
     processed = Payment.objects.filter(
-        accountant=request.user, is_paid=True, accountant_dashboard_deleted=False
+        accountant=request.user, is_paid=True,
+        accountant_dashboard_deleted=False,
     ).select_related('patient', 'visit', 'surgery', 'admission').order_by('-paid_at')[:50]
 
-    ctx = {'pending': pending, 'processed': processed, 'accountant': request.user}
+    ctx = {
+        'visit_sessions': visit_sessions,
+        'processed': processed,
+        'accountant': request.user,
+    }
     return render(request, 'accountant.html', ctx)
 
 
