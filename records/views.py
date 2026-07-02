@@ -595,10 +595,8 @@ def ward_occupancy(request):
 @login_required
 def print_lab_results(request, lr_id):
     from lab.models import LabRequest
+
     lr = get_object_or_404(LabRequest, pk=lr_id)
-    if request.user not in [lr.patient, lr.doctor, lr.lab_attendant] and not request.user.is_staff:
-        if request.user.role not in ['lab_attendant', 'doctor']:
-            return redirect('dashboard')
     return render(request, 'lab_results_print.html', {'lr': lr})
 
 
