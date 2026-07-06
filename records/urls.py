@@ -17,4 +17,7 @@ urlpatterns = [
     path('api/lab-test-search/', views.lab_test_search, name='lab_test_search'),
     path('print/lab-results/<int:lr_id>/', views.print_lab_results, name='print_lab_results'),
     path('api/ai-suggest/', views.ai_suggest, name='ai_suggest'),
+    # External prescription print (new)
+    path('print/external-rx/<int:visit_id>/', views.print_external_rx, name='print_external_rx'),
+    path('api/notes/<int:visit_id>/', views.get_doctor_notes, name='get_doctor_notes'),
 ]

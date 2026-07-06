@@ -221,19 +221,20 @@
 
   {% for adm in v.admissions.all %}
   <div class="card" style="border-color:{% if adm.status == 'admitted' %}var(--teal-border){% else %}var(--border){% endif %}">
-    <div class="card-header" style="{% if adm.status == 'admitted' %}background:var(--teal-light){% endif %}">
-      <div class="card-title"><span class="card-title-icon">🛏</span> Ward Admission</div>
+    <div class="card-header" style="{% if adm.status == 'admitted' %}background:var(--teal-dim){% endif %}">
+      <div>
+        <div class="fw-7 text-sm">{{ adm.ward.name|default:"Ward" }} · Bed {{ adm.bed_number }}</div>
+        <div class="text-xs text-muted mt-1">₦{{ adm.daily_ward_fee|floatformat:0 }}/day</div>
+      </div>
       <span class="badge {% if adm.status == 'admitted' %}b-teal{% elif adm.status == 'paid' %}b-blue{% else %}b-amber{% endif %}">{{ adm.get_status_display }}</span>
     </div>
     <div class="card-body">
-      <div class="grid cols-2" style="margin-bottom:12px;gap:10px">
-        <div><div class="text-xs text-muted">Ward & Bed</div><div class="fw-7 text-sm mt-1">{{ adm.get_ward_display }} · Bed {{ adm.bed_number }}</div></div>
-        <div><div class="text-xs text-muted">Daily Rate</div><div class="fw-7 text-sm mono mt-1">₦{{ adm.daily_ward_fee|floatformat:0 }}/day</div></div>
-      </div>
-      {% if adm.admission_reason %}<div class="text-xs text-dim mb-3">{{ adm.admission_reason }}</div>{% endif %}
+      {% if adm.admission_reason %}
+      <div class="text-xs text-dim" style="margin-bottom:12px">{{ adm.admission_reason }}</div>
+      {% endif %}
 
       {% if adm.prescriptions.all %}
-      <div class="section-label" style="margin-top:0">Medications <span class="badge b-teal">🛏 Admission</span></div>
+      <div class="section-label" style="margin-top:0">Medications</div>
       {% for rx in adm.prescriptions.all %}
       <div style="padding:10px 12px;background:{% if rx.status == 'voided' %}var(--surface3){% else %}var(--teal-light){% endif %};border:1px solid {% if rx.status == 'voided' %}var(--border){% else %}var(--teal-border){% endif %};border-radius:var(--r-md);margin-bottom:7px;{% if rx.status == 'voided' %}opacity:.5{% endif %}">
         <div class="flex items-center justify-between mb-2">
