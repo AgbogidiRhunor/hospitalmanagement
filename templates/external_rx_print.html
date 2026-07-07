@@ -1,0 +1,266 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>External Prescription — {{ visit.patient.display_name }}</title>
+<style>
+  @page { size: A4; margin: 20mm 18mm; }
+  @media print {
+    .no-print { display: none !important; }
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Georgia', serif; font-size: 13px; color: #111; background: #fff; line-height: 1.5; }
+
+  /* ── No-print toolbar ── */
+  .toolbar {
+    position: fixed; top: 0; left: 0; right: 0;
+    background: #18181b; color: #eeede6; padding: 10px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; z-index: 100; font-family: 'Inter', system-ui, sans-serif;
+    font-size: 13px;
+  }
+  .toolbar-title { font-weight: 600; }
+  .toolbar-btns { display: flex; gap: 8px; }
+  .btn-print {
+    padding: 7px 18px; border-radius: 6px;
+    background: #3b82f6; color: #fff; border: none;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-print:hover { background: #2563eb; }
+  .btn-close {
+    padding: 7px 14px; border-radius: 6px;
+    background: transparent; color: #a3a29c;
+    border: 1px solid rgba(255,255,255,.15);
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-close:hover { background: rgba(255,255,255,.08); }
+
+  /* ── Page ── */
+  .page { max-width: 760px; margin: 80px auto 40px; padding: 0 10px; }
+  @media print { .page { margin: 0; } }
+
+  /* ── Header ── */
+  .rx-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding-bottom: 16px; border-bottom: 2.5px solid #111; margin-bottom: 20px;
+  }
+  .hospital-name { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; font-family: 'Georgia', serif; }
+  .hospital-sub { font-size: 11px; color: #555; margin-top: 3px; letter-spacing: 0.5px; text-transform: uppercase; }
+  .rx-symbol { font-size: 48px; color: #ccc; font-family: serif; line-height: 1; }
+
+  /* ── Patient / Visit info strip ── */
+  .info-strip {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    padding: 12px 14px;
+    background: #f8f8f8; border: 1px solid #e0e0e0;
+    border-radius: 6px; margin-bottom: 20px;
+  }
+  .info-field-label { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin-bottom: 3px; }
+  .info-field-value { font-size: 12.5px; font-weight: 600; color: #111; }
+
+  /* ── Clinical note box ── */
+  .note-box {
+    padding: 10px 14px;
+    border-left: 3px solid #111;
+    background: #f8f8f8;
+    margin-bottom: 20px;
+    font-size: 12px; color: #333; line-height: 1.6;
+  }
+  .note-box-label { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin-bottom: 4px; }
+
+  /* ── Section heading ── */
+  .section-heading {
+    font-size: 9.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.6px; color: #333;
+    border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 10px;
+  }
+
+  /* ── Drug table ── */
+  .drug-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+  .drug-table thead tr { background: #f0f0f0; }
+  .drug-table th {
+    padding: 8px 10px; text-align: left;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.4px;
+    text-transform: uppercase; color: #444;
+    border-bottom: 2px solid #111;
+  }
+  .drug-table td { padding: 10px 10px; border-bottom: 1px solid #e8e8e8; vertical-align: top; }
+  .drug-table td:first-child { font-weight: 700; }
+  .drug-table tr:last-child td { border-bottom: none; }
+  .drug-table tr:nth-child(even) td { background: #fafafa; }
+  .drug-num { color: #888; font-size: 11px; font-weight: 400; }
+
+  /* ── Disclaimer ── */
+  .disclaimer {
+    padding: 10px 12px;
+    border: 1px dashed #ccc; border-radius: 4px;
+    font-size: 11px; color: #777; line-height: 1.5;
+    margin-bottom: 32px;
+  }
+  .disclaimer strong { color: #555; }
+
+  /* ── Signature block ── */
+  .sig-block { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; margin-top: 48px; }
+  .sig-col {}
+  .sig-line { border-top: 1.5px solid #111; padding-top: 8px; }
+  .sig-title { font-size: 11px; font-weight: 700; color: #333; margin-bottom: 4px; }
+  .sig-sub { font-size: 10px; color: #888; }
+  .sig-name-blank {
+    margin-top: 20px;
+    border-top: 1px solid #ccc;
+    padding-top: 6px;
+    font-size: 10px; color: #999;
+  }
+  .sig-date-blank {
+    margin-top: 12px;
+    border-top: 1px solid #ccc;
+    padding-top: 6px;
+    font-size: 10px; color: #999;
+  }
+
+  /* ── Footer ── */
+  .rx-footer {
+    margin-top: 40px; padding-top: 12px;
+    border-top: 1px solid #e0e0e0;
+    display: flex; justify-content: space-between;
+    font-size: 10px; color: #aaa;
+  }
+</style>
+</head>
+<body>
+
+<!-- No-print toolbar -->
+<div class="toolbar no-print">
+  <div class="toolbar-title">External Prescription — {{ visit.patient.display_name }}</div>
+  <div class="toolbar-btns">
+    <button class="btn-close" onclick="window.close()">✕ Close</button>
+    <button class="btn-print" onclick="window.print()">🖨 Print</button>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="rx-header">
+    <div>
+      <div class="hospital-name">Rhudesi Hospital</div>
+      <div class="hospital-sub">External Prescription</div>
+    </div>
+    <div class="rx-symbol">℞</div>
+  </div>
+
+  <!-- Patient / Visit info -->
+  <div class="info-strip">
+    <div>
+      <div class="info-field-label">Patient</div>
+      <div class="info-field-value">{{ visit.patient.display_name }}</div>
+    </div>
+    <div>
+      <div class="info-field-label">Visit #</div>
+      <div class="info-field-value">#{{ visit.id }}</div>
+    </div>
+    <div>
+      <div class="info-field-label">Doctor</div>
+      <div class="info-field-value">Dr. {{ visit.doctor.display_name|default:"—" }}</div>
+    </div>
+    <div>
+      <div class="info-field-label">Date</div>
+      <div class="info-field-value">{{ today }}</div>
+    </div>
+    {% if visit.patient.date_of_birth %}
+    <div>
+      <div class="info-field-label">Date of Birth</div>
+      <div class="info-field-value">{{ visit.patient.date_of_birth|date:"d M Y" }}</div>
+    </div>
+    {% endif %}
+    {% if visit.patient.blood_group %}
+    <div>
+      <div class="info-field-label">Blood Group</div>
+      <div class="info-field-value">{{ visit.patient.blood_group }}</div>
+    </div>
+    {% endif %}
+    {% if visit.patient.allergies %}
+    <div class="col-span-2" style="grid-column:span 2">
+      <div class="info-field-label">⚠ Known Allergies</div>
+      <div class="info-field-value" style="color:#c00">{{ visit.patient.allergies }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Clinical note -->
+  {% if note %}
+  <div class="note-box">
+    <div class="note-box-label">Clinical Note</div>
+    {{ note }}
+  </div>
+  {% endif %}
+
+  <!-- Drug table -->
+  <div class="section-heading">Prescribed Medications — Not available in hospital pharmacy</div>
+  <table class="drug-table">
+    <thead>
+      <tr>
+        <th style="width:28px">#</th>
+        <th>Drug / Item</th>
+        <th>Dosage &amp; Instructions</th>
+        <th>Indication</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for drug in ext_drugs %}
+      <tr>
+        <td class="drug-num">{{ forloop.counter }}</td>
+        <td>{{ drug.name }}</td>
+        <td>{{ drug.dosage|default:"As directed by physician" }}</td>
+        <td style="font-size:11px;color:#555">{{ drug.reason|default:"" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Disclaimer -->
+  <div class="disclaimer">
+    <strong>Note to Pharmacist:</strong> The above medications are not currently stocked at Rhudesi Hospital pharmacy. Please dispense as prescribed. If any item is unavailable, contact the prescribing physician before substituting.
+    <br><br>
+    <strong>Note to Patient:</strong> Obtain these medications from an external pharmacy and retain your receipt. Bring this prescription and the receipt on your next visit to the hospital.
+  </div>
+
+  <!-- Signatures -->
+  <div class="sig-block">
+    <div class="sig-col">
+      <div class="sig-line">
+        <div class="sig-title">Prescribing Doctor</div>
+        <div class="sig-sub">Signature &amp; Hospital Stamp</div>
+      </div>
+      <div class="sig-name-blank">Full Name: Dr. {{ visit.doctor.display_name|default:"_______________________" }}</div>
+      {% if visit.doctor.license_number %}
+      <div class="sig-date-blank">License No: {{ visit.doctor.license_number }}</div>
+      {% endif %}
+      <div class="sig-date-blank">Date: ___________________________</div>
+    </div>
+    <div class="sig-col">
+      <div class="sig-line">
+        <div class="sig-title">Patient Acknowledgement</div>
+        <div class="sig-sub">I confirm I have received and understood this prescription</div>
+      </div>
+      <div class="sig-name-blank">Full Name: {{ visit.patient.display_name }}</div>
+      <div class="sig-date-blank">Signature: ______________________</div>
+      <div class="sig-date-blank">Date: ___________________________</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="rx-footer">
+    <span>Rhudesi Hospital Management System</span>
+    <span>Generated: {{ today }} · Visit #{{ visit.id }} · External Rx</span>
+  </div>
+
+</div>
+</body>
+</html>

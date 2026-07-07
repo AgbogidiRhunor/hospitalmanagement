@@ -6,7 +6,7 @@
 
 {% block nav %}
 <a href="{% url 'accountant_dashboard' %}" class="sb-item active">
-  <span class="sb-icon">💳</span> Pending
+  <span class="sb-icon">💳</span> Active Sessions
   <span class="sb-badge {% if not visit_sessions %}muted{% endif %}" id="pendBadge">{{ visit_sessions|length }}</span>
 </a>
 <a href="{% url 'accountant_history' %}" class="sb-item">
@@ -14,13 +14,14 @@
 </a>
 {% endblock %}
 
-{% block page_title %}Payments{% endblock %}
+{% block page_title %}Active Patient Sessions{% endblock %}
 
 {% block topbar_widgets %}
 <div class="flex items-center gap-2">
   <span class="text-xs text-muted">On Sit</span>
   <label class="toggle">
-    <input type="checkbox" id="togSit" {% if accountant.is_on_sit %}checked{% endif %} onchange="toggleField('is_on_sit',this)">
+    <input type="checkbox" id="togSit" {% if accountant.is_on_sit %}checked{% endif %}
+      onchange="toggleField('is_on_sit',this)">
     <div class="toggle-track"></div>
     <div class="toggle-dot"></div>
   </label>
@@ -30,60 +31,60 @@
 {% block content %}
 
 {% if not visit_sessions %}
-<div class="card" id="allClearCard">
+<div class="card">
   <div class="empty-state">
     <div class="empty-icon">✓</div>
     <div class="empty-title" style="color:var(--teal)">All caught up!</div>
-    <div class="empty-sub">No pending payments right now.</div>
+    <div class="empty-sub">No active patient sessions right now. Tabs open when a receptionist registers a visit and close when the doctor ends it.</div>
   </div>
 </div>
 {% else %}
 
-<!-- Search bar -->
+<!-- Search -->
 <div style="margin-bottom:14px;position:relative">
-  <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:.9rem;pointer-events:none">🔍</span>
-  <input class="inp" id="sessionSearch" placeholder="Search patient name or visit number…"
+  <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:.88rem;pointer-events:none">🔍</span>
+  <input class="inp" id="sessionSearch" placeholder="Search patient name or visit #…"
     style="padding-left:38px" oninput="filterSessions(this.value)">
 </div>
 
 <div id="sessionList">
 {% for session in visit_sessions %}
-{# Each session = one visit, all its payments grouped #}
 <div class="session-card visit-card" style="margin-bottom:10px"
   data-patient="{{ session.patient_name|lower }}"
   data-visit="{{ session.visit_id }}">
 
-  <!-- Session header (always visible, click to expand) -->
-  <div class="vc-header" onclick="toggleSession('sess{{ session.visit_id }}', 'sessch{{ session.visit_id }}')">
-    <div class="vc-queue" style="font-size:.65rem;background:var(--bg-elevated)">
+  <!-- Header -->
+  <div class="vc-header" onclick="toggleSession('sess{{ session.visit_id }}','sessch{{ session.visit_id }}')">
+    <div class="vc-queue" style="font-size:.62rem;background:var(--bg-elevated);color:var(--text-2)">
       #{{ session.visit_id }}
     </div>
     <div class="vc-info">
       <div class="vc-name">
         {{ session.patient_name }}
         {% if session.has_unpaid %}
-        <span class="badge b-amber"><span class="badge-dot"></span>{{ session.unpaid_count }} pending</span>
+        <span class="badge b-amber" id="unpaid_badge_{{ session.visit_id }}">
+          <span class="badge-dot"></span>{{ session.unpaid_count }} pending
+        </span>
         {% else %}
-        <span class="badge b-teal">✓ All paid</span>
+        <span class="badge b-teal" id="unpaid_badge_{{ session.visit_id }}">✓ All paid</span>
         {% endif %}
         {% if session.has_surgery %}<span class="badge b-purple">⚕ Surgery</span>{% endif %}
         {% if session.has_admission %}<span class="badge b-teal">🛏 Ward</span>{% endif %}
       </div>
       <div class="vc-meta">
-        <span class="mono fw-7" style="color:{% if session.has_unpaid %}var(--amber){% else %}var(--teal){% endif %}">
-          ₦{{ session.total_pending|floatformat:0 }} pending
-        </span>
+        <span>Pending: <span class="mono fw-6 text-amber" id="sess_pend_{{ session.visit_id }}">₦{{ session.total_pending|floatformat:0 }}</span></span>
         <span class="vc-meta-dot"></span>
-        <span class="text-muted">₦{{ session.total_paid|floatformat:0 }} paid</span>
+        <span>Paid: <span class="mono fw-6 text-teal" id="sess_paid_{{ session.visit_id }}">₦{{ session.total_paid|floatformat:0 }}</span></span>
         <span class="vc-meta-dot"></span>
         <span>{{ session.payment_count }} payment{{ session.payment_count|pluralize }}</span>
         <span class="vc-meta-dot"></span>
         <span>{{ session.started_at|date:"d M, H:i" }}</span>
       </div>
     </div>
-    <div class="flex items-center gap-2 flex-shrink-0">
+    <div class="flex items-center gap-2 flex-shrink-0" onclick="event.stopPropagation()">
       {% if session.has_unpaid %}
-      <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();confirmAllInSession({{ session.visit_id }}, this)">
+      <button class="btn btn-primary btn-sm" id="confirm_all_{{ session.visit_id }}"
+        onclick="confirmAllInSession({{ session.visit_id }}, this)">
         Confirm All ✓
       </button>
       {% endif %}
@@ -95,18 +96,34 @@
     </div>
   </div>
 
-  <!-- Session body: all payments for this visit -->
+  <!-- All payments for this visit (stay visible even after paying) -->
   <div class="vc-body" id="sess{{ session.visit_id }}">
+    {% if not session.payments %}
+    <div style="padding:12px 14px">
+      <div class="text-xs text-muted">No payments yet — they will appear here as the doctor orders tests, prescriptions, and procedures.</div>
+    </div>
+    {% endif %}
+
     {% for pay in session.payments %}
-    <div id="prow{{ pay.id }}" style="padding:11px 14px;border-top:1px solid var(--border);{% if pay.is_paid %}opacity:.5{% endif %}">
+    <div id="prow{{ pay.id }}"
+      style="padding:11px 14px;border-top:1px solid var(--border);transition:background .2s">
+
       <div class="flex items-center gap-3" style="flex-wrap:wrap">
         <div style="flex:1;min-width:0">
           <div class="flex items-center gap-2 flex-wrap">
             <span class="fw-6 text-sm">{{ pay.get_payment_type_display }}</span>
-            {% if pay.total_parts > 1 %}<span class="badge b-blue">Part {{ pay.part_number }}/{{ pay.total_parts }}</span>{% endif %}
-            {% if pay.surgery %}<span class="badge b-purple">⚕</span>{% endif %}
-            {% if pay.admission and not pay.surgery %}<span class="badge b-teal">🛏</span>{% endif %}
-            {% if pay.is_paid %}<span class="badge b-teal">✓ Paid</span>{% endif %}
+            {% if pay.total_parts > 1 %}
+            <span class="badge b-blue">Part {{ pay.part_number }}/{{ pay.total_parts }}</span>
+            {% endif %}
+            {% if pay.surgery %}<span class="badge b-purple" style="font-size:.6rem">⚕</span>{% endif %}
+            {% if pay.admission and not pay.surgery %}<span class="badge b-teal" style="font-size:.6rem">🛏</span>{% endif %}
+            <span class="pay-status-badge-{{ pay.id }}">
+              {% if pay.is_paid %}
+              <span class="badge b-teal">✓ Paid {{ pay.paid_at|date:"d M, H:i" }}</span>
+              {% else %}
+              <span class="badge b-amber"><span class="badge-dot"></span>Pending</span>
+              {% endif %}
+            </span>
           </div>
 
           <!-- Payment details -->
@@ -135,7 +152,7 @@
           {% if pay.payment_type == 'admission' and pay.admission %}
           <div class="text-xs text-muted mt-1">
             {{ pay.admission.ward.name|default:"Ward" }} · Bed {{ pay.admission.bed_number }}
-            {% if pay.admission.admission_reason %} — {{ pay.admission.admission_reason|truncatechars:50 }}{% endif %}
+            {% if pay.admission.admission_reason %} — {{ pay.admission.admission_reason|truncatechars:60 }}{% endif %}
           </div>
           {% endif %}
 
@@ -145,28 +162,40 @@
         </div>
 
         <div class="flex items-center gap-2 flex-shrink-0">
-          <span class="mono fw-7" style="color:{% if pay.is_paid %}var(--teal){% else %}var(--amber){% endif %};font-size:.95rem">
+          <span class="mono fw-7" style="color:{% if pay.is_paid %}var(--teal){% else %}var(--amber){% endif %};font-size:.9rem">
             ₦{{ pay.amount|floatformat:0 }}
           </span>
-          {% if not pay.is_paid %}
-          <button class="btn btn-primary btn-sm" onclick="confirmPay({{ pay.id }}, this, {{ session.visit_id }})">
-            Confirm ✓
-          </button>
-          {% else %}
-          <a href="/accounting/receipt/{{ pay.id }}/print/" target="_blank" class="btn btn-ghost btn-xs">🖨</a>
-          {% endif %}
+          <span class="pay-action-{{ pay.id }}">
+            {% if not pay.is_paid %}
+            <button class="btn btn-primary btn-sm"
+              onclick="confirmPay({{ pay.id }}, {{ session.visit_id }}, this)">
+              Confirm ✓
+            </button>
+            {% else %}
+            <a href="/accounting/receipt/{{ pay.id }}/print/" target="_blank"
+              class="btn btn-ghost btn-xs">🖨 Receipt</a>
+            {% endif %}
+          </span>
         </div>
       </div>
     </div>
     {% endfor %}
 
-    <!-- Session total footer -->
-    <div style="padding:10px 14px;background:var(--bg-elevated);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-      <span class="text-xs text-muted">Session total</span>
-      <div class="flex items-center gap-3">
-        <span class="text-xs text-muted">Paid: <span class="mono fw-6 text-teal" id="sess_paid_{{ session.visit_id }}">₦{{ session.total_paid|floatformat:0 }}</span></span>
-        <span class="text-xs text-muted">Pending: <span class="mono fw-6 text-amber" id="sess_pend_{{ session.visit_id }}">₦{{ session.total_pending|floatformat:0 }}</span></span>
-        <span class="text-xs fw-7" style="color:var(--text)">Total: <span class="mono">₦{{ session.total_all|floatformat:0 }}</span></span>
+    <!-- Session totals footer -->
+    <div style="padding:10px 14px;background:var(--bg-elevated);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div class="flex items-center gap-2 text-xs text-muted">
+        <span>{% if session.visit.doctor %}Dr. {{ session.visit.doctor.display_name }}{% endif %}</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="text-xs">
+          Pending: <span class="mono fw-7 text-amber" id="foot_pend_{{ session.visit_id }}">₦{{ session.total_pending|floatformat:0 }}</span>
+        </span>
+        <span class="text-xs">
+          Paid: <span class="mono fw-7 text-teal" id="foot_paid_{{ session.visit_id }}">₦{{ session.total_paid|floatformat:0 }}</span>
+        </span>
+        <span class="text-xs fw-7">
+          Total: <span class="mono">₦{{ session.total_all|floatformat:0 }}</span>
+        </span>
       </div>
     </div>
   </div>
@@ -180,109 +209,125 @@
 
 {% block js %}
 <script>
-// Toggle session expand
 function toggleSession(bodyId, chevId){
   const b=document.getElementById(bodyId), c=document.getElementById(chevId);
-  if(!b) return;
+  if(!b)return;
   const open=b.classList.toggle('open');
-  if(c) c.style.transform=open?'rotate(180deg)':'';
+  if(c)c.style.transform=open?'rotate(180deg)':'';
 }
 
-// Search filter
 function filterSessions(q){
   q=q.toLowerCase().trim();
   document.querySelectorAll('.session-card').forEach(card=>{
     const name=card.dataset.patient||'';
-    const vid=card.dataset.visit||'';
+    const vid=(card.dataset.visit||'');
     card.style.display=(!q||name.includes(q)||vid.includes(q))?'':'none';
   });
 }
 
-// Toggle on-sit
-async function toggleField(field, el){
+async function toggleField(field,el){
   const r=await R.post('/api/toggle-availability/',{field});
   if(r.status==='ok') R.toast(r.value?'On sit':'Off sit','ok');
   else{ R.toast(r.error||'Error','err'); el.checked=!el.checked; }
 }
 
-// Confirm single payment
-async function confirmPay(id, btn, visitId){
+async function confirmPay(payId, visitId, btn){
   btn.disabled=true; btn.textContent='…';
-  const r=await R.post(`/accounting/confirm/${id}/`);
+  const r=await R.post(`/accounting/confirm/${payId}/`);
   if(r.status==='ok'){
-    R.toast('Payment confirmed!','ok');
-    const row=document.getElementById('prow'+id);
+    R.toast('Payment confirmed ✓','ok');
+
+    // Update status badge — keep row visible
+    const row=document.getElementById('prow'+payId);
     if(row){
-      row.style.opacity='.45';
-      const confirmBtn=row.querySelector('.btn-primary');
-      if(confirmBtn){
-        // Replace button with receipt link
-        confirmBtn.outerHTML=`<a href="/accounting/receipt/${id}/print/" target="_blank" class="btn btn-ghost btn-xs">🖨</a>`;
+      row.style.background='var(--teal-dim)';
+      // Replace pending badge with paid badge
+      const statusSpan=row.querySelector(`.pay-status-badge-${payId}`);
+      if(statusSpan){
+        const now=new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+        statusSpan.innerHTML=`<span class="badge b-teal">✓ Paid ${now}</span>`;
       }
-      // Add paid badge
-      const name=row.querySelector('.fw-6');
-      if(name){
-        const badge=document.createElement('span');
-        badge.className='badge b-teal';
-        badge.textContent='✓ Paid';
-        name.after(badge);
+      // Replace confirm button with receipt link
+      const actionSpan=row.querySelector(`.pay-action-${payId}`);
+      if(actionSpan){
+        actionSpan.innerHTML=`<a href="/accounting/receipt/${payId}/print/" target="_blank" class="btn btn-ghost btn-xs">🖨 Receipt</a>`;
       }
     }
-    updateSessionBadge(visitId);
-    setTimeout(()=>location.reload(),1500);
+
+    // Update session totals from server response
+    updateSessionTotals(visitId, r.total_paid, r.total_pending);
   } else {
     btn.disabled=false; btn.textContent='Confirm ✓';
     R.toast(r.error||'Error confirming','err');
   }
 }
 
-// Confirm all unpaid in session
 async function confirmAllInSession(visitId, btn){
   btn.disabled=true; btn.textContent='Confirming…';
-  // Find all unpaid confirm buttons in this session
   const sess=document.getElementById('sess'+visitId);
   if(!sess){ btn.disabled=false; return; }
-  const payBtns=Array.from(sess.querySelectorAll('[onclick*="confirmPay"]'));
+
+  // Find all unpaid confirm buttons
+  const confirmBtns=Array.from(sess.querySelectorAll('[onclick*="confirmPay"]'));
   let confirmed=0;
-  for(const pb of payBtns){
+  for(const pb of confirmBtns){
     const match=pb.getAttribute('onclick').match(/confirmPay\((\d+)/);
     if(!match) continue;
-    const payId=match[1];
+    const payId=+match[1];
     const r=await R.post(`/accounting/confirm/${payId}/`);
     if(r.status==='ok'){
       confirmed++;
       const row=document.getElementById('prow'+payId);
-      if(row){ row.style.opacity='.45'; pb.remove(); }
+      if(row){
+        row.style.background='var(--teal-dim)';
+        const statusSpan=row.querySelector(`.pay-status-badge-${payId}`);
+        if(statusSpan){
+          const now=new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+          statusSpan.innerHTML=`<span class="badge b-teal">✓ Paid ${now}</span>`;
+        }
+        const actionSpan=row.querySelector(`.pay-action-${payId}`);
+        if(actionSpan){
+          actionSpan.innerHTML=`<a href="/accounting/receipt/${payId}/print/" target="_blank" class="btn btn-ghost btn-xs">🖨 Receipt</a>`;
+        }
+      }
+      if(r.total_paid !== undefined) updateSessionTotals(visitId, r.total_paid, r.total_pending);
     }
   }
+
   if(confirmed>0){
     R.toast(`${confirmed} payment(s) confirmed!`,'ok');
-    setTimeout(()=>location.reload(),1000);
+    // Hide "Confirm All" button since all paid
+    btn.style.display='none';
+    // Update unpaid badge
+    const badge=document.getElementById('unpaid_badge_'+visitId);
+    if(badge){ badge.className='badge b-teal'; badge.innerHTML='✓ All paid'; }
   } else {
     btn.disabled=false; btn.textContent='Confirm All ✓';
     R.toast('Nothing to confirm','warn');
   }
 }
 
-function updateSessionBadge(visitId){
-  // Recount unpaid in session after a confirm
-  const sess=document.getElementById('sess'+visitId);
-  if(!sess) return;
-  const remaining=sess.querySelectorAll('[onclick*="confirmPay"]').length;
-  const header=sess.previousElementSibling; // vc-header
-  if(!header) return;
-  const badge=header.querySelector('.badge.b-amber');
-  if(remaining===0 && badge){
-    badge.className='badge b-teal';
-    badge.innerHTML='✓ All paid';
-    const confirmAllBtn=header.querySelector('.btn-primary');
-    if(confirmAllBtn) confirmAllBtn.remove();
-  } else if(badge){
-    badge.innerHTML=`<span class="badge-dot"></span>${remaining} pending`;
+function updateSessionTotals(visitId, totalPaid, totalPending){
+  // Header
+  const paidEl=document.getElementById('sess_paid_'+visitId);
+  const pendEl=document.getElementById('sess_pend_'+visitId);
+  if(paidEl) paidEl.textContent='₦'+Math.round(totalPaid).toLocaleString();
+  if(pendEl) pendEl.textContent='₦'+Math.round(totalPending).toLocaleString();
+  // Footer
+  const footPaid=document.getElementById('foot_paid_'+visitId);
+  const footPend=document.getElementById('foot_pend_'+visitId);
+  if(footPaid) footPaid.textContent='₦'+Math.round(totalPaid).toLocaleString();
+  if(footPend) footPend.textContent='₦'+Math.round(totalPending).toLocaleString();
+  // Badge
+  if(totalPending<=0){
+    const badge=document.getElementById('unpaid_badge_'+visitId);
+    if(badge){ badge.className='badge b-teal'; badge.innerHTML='✓ All paid'; }
+    const confirmAllBtn=document.getElementById('confirm_all_'+visitId);
+    if(confirmAllBtn) confirmAllBtn.style.display='none';
   }
 }
 
-// Auto-expand sessions with unpaid items
+// Auto-expand sessions that have unpaid items
 document.querySelectorAll('.session-card').forEach(card=>{
   const badge=card.querySelector('.badge.b-amber');
   if(badge){

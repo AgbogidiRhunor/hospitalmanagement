@@ -200,7 +200,7 @@
 
     <!-- ACTION ROW -->
     <div class="vc-actions">
-      <button class="btn btn-surface btn-sm" onclick="openNote({{ v.id }}, '{{ v.patient.display_name|escapejs }}', {{ v.doctor_notes.all|jsonify_notes }})">📝 Note</button>
+      <button class="btn btn-surface btn-sm" onclick="openNote({{ v.id }})">📝 Note</button>
       <button class="btn btn-surface btn-sm" onclick="openLab({{ v.id }})">🔬 Lab</button>
       <button class="btn btn-primary btn-sm" onclick="openRx({{ v.id }})">💊 Rx</button>
       <button class="btn btn-teal btn-sm" onclick="openAdmit({{ v.id }})">🛏 Admit</button>
@@ -224,7 +224,7 @@
     <div class="modal-body">
       <div class="grid cols-2" style="gap:8px">
         {% for room in rooms %}
-        {% with is_mine=room.id|default:0 occupant=room.current_doc %}
+        {% with occupant=room.current_doc %}
         <div {% if not occupant or occupant.id == doctor.id %}onclick="selectRoom({{ room.id }}, this)"{% endif %}
           style="padding:14px;border:1px solid {% if doctor.consulting_room.id == room.id %}var(--accent-border){% elif occupant and occupant.id != doctor.id %}var(--red-border){% else %}var(--border){% endif %};background:{% if doctor.consulting_room.id == room.id %}var(--accent-dim){% elif occupant and occupant.id != doctor.id %}var(--red-dim){% else %}var(--bg-elevated){% endif %};border-radius:var(--radius);cursor:{% if occupant and occupant.id != doctor.id %}not-allowed{% else %}pointer{% endif %};transition:.15s"
           {% if not occupant or occupant.id == doctor.id %}
@@ -263,14 +263,13 @@
         <div class="modal-title">Clinical Note</div>
         <div class="modal-subtitle" id="notePatientName"></div>
       </div>
-      <button class="modal-close" onclick="closeNoteModal()">✕</button>
+      <button class="modal-close" onclick="R.modal('noteModal',false)">✕</button>
     </div>
-    <div class="modal-body" style="display:grid;grid-template-columns:1fr 340px;gap:16px;min-height:420px">
-
-      <!-- LEFT: Note + AI -->
-      <div>
+    <div class="modal-body" style="display:grid;grid-template-columns:1fr 300px;gap:16px;min-height:400px">
+      <!-- LEFT: note + AI -->
+      <div style="display:flex;flex-direction:column;gap:10px">
         <input type="hidden" id="noteVid">
-        <div class="fg">
+        <div class="fg" style="margin-bottom:0">
           <div class="flex items-center justify-between">
             <label class="label">Note <span class="label-req">*</span></label>
             <button class="btn btn-xs" id="aiSuggestBtn" onclick="getAiSuggestions()"
@@ -281,111 +280,68 @@
           </div>
           <textarea class="inp" id="noteText" rows="6" placeholder="Observations, diagnosis, treatment plan…"></textarea>
         </div>
-
-        <!-- Past notes for this visit -->
-        <div id="pastNotes" style="display:none;margin-top:4px">
-          <div class="section-label" style="margin-top:8px">Previous Notes</div>
+        <!-- Past notes -->
+        <div id="pastNotes" style="display:none">
+          <div class="section-label" style="margin-top:4px">Previous Notes</div>
           <div id="pastNotesList"></div>
         </div>
-
-        <!-- AI PANEL -->
-        <div id="aiPanel" style="display:none;margin-top:12px;border:1px solid var(--accent-border);border-radius:var(--radius);overflow:hidden">
-          <div style="background:var(--accent-dim);padding:8px 14px;font-size:.7rem;font-weight:700;color:var(--accent);letter-spacing:.05em;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between">
-            <span>✨ AI Clinical Suggestions</span>
-            <span style="font-weight:400;text-transform:none;opacity:.7">click chips to add to cart →</span>
+        <!-- AI panel -->
+        <div id="aiPanel" style="display:none;border:1px solid var(--accent-border);border-radius:var(--radius);overflow:hidden">
+          <div style="background:var(--accent-dim);padding:7px 12px;font-size:.68rem;font-weight:700;color:var(--accent);letter-spacing:.05em;text-transform:uppercase;display:flex;justify-content:space-between">
+            <span>✨ AI Suggestions</span><span style="font-weight:400;opacity:.7">click chips to add to cart</span>
           </div>
-          <div id="aiContent" style="padding:12px 14px"></div>
+          <div id="aiContent" style="padding:12px"></div>
         </div>
-
-        <!-- External Rx (drugs not in system) -->
-        <div id="externalRxPanel" style="display:none;margin-top:10px;border:1px solid var(--amber-border);border-radius:var(--radius);overflow:hidden">
-          <div style="background:var(--amber-dim);padding:8px 14px;font-size:.7rem;font-weight:700;color:var(--amber);letter-spacing:.05em;text-transform:uppercase">
-            ⚠ External Drugs — Not in system
+        <!-- External Rx panel -->
+        <div id="externalRxPanel" style="display:none;border:1px solid var(--amber-border);border-radius:var(--radius);overflow:hidden">
+          <div style="background:var(--amber-dim);padding:7px 12px;font-size:.68rem;font-weight:700;color:var(--amber);letter-spacing:.05em;text-transform:uppercase">
+            ⚠ Not in system — External Rx
           </div>
-          <div id="externalRxList" style="padding:10px 14px">
-            <div class="text-xs text-muted" style="margin-bottom:8px">These drugs were suggested but are not available in the pharmacy. Print an external prescription for the patient.</div>
-            <div id="externalDrugItems"></div>
-          </div>
+          <div id="externalDrugItems" style="padding:8px 12px"></div>
         </div>
       </div>
-
-      <!-- RIGHT: Cart -->
-      <div style="border-left:1px solid var(--border);padding-left:16px;display:flex;flex-direction:column;gap:10px">
-        <div style="font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-muted)">
-          🛒 Order Cart
-        </div>
-
-        <!-- Cart drugs -->
+      <!-- RIGHT: cart -->
+      <div style="border-left:1px solid var(--border);padding-left:14px;display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-muted)">🛒 Cart</div>
         <div>
-          <div style="font-size:.72rem;font-weight:600;color:var(--text-2);margin-bottom:5px">💊 Drugs</div>
-          <div id="cartDrugList"><div class="text-xs text-muted">No drugs added</div></div>
-          <div class="search-wrap" style="margin-top:6px">
-            <input class="inp" id="cartDrugInp" placeholder="Add drug manually…" autocomplete="off" style="font-size:.8rem">
+          <div style="font-size:.72rem;font-weight:600;color:var(--text-2);margin-bottom:4px">💊 Drugs</div>
+          <div id="cartDrugList"><div class="text-xs text-muted">None added</div></div>
+          <div class="search-wrap" style="margin-top:5px">
+            <input class="inp" id="cartDrugInp" placeholder="Add drug…" autocomplete="off" style="font-size:.8rem">
             <div class="search-drop" id="cartDrugDrop"></div>
           </div>
         </div>
-
         <div style="height:1px;background:var(--border)"></div>
-
-        <!-- Cart labs -->
         <div>
-          <div style="font-size:.72rem;font-weight:600;color:var(--text-2);margin-bottom:5px">🧪 Lab Tests</div>
-          <div id="cartLabList"><div class="text-xs text-muted">No tests added</div></div>
-          <div class="search-wrap" style="margin-top:6px">
-            <input class="inp" id="cartLabInp" placeholder="Add test manually…" autocomplete="off" style="font-size:.8rem">
+          <div style="font-size:.72rem;font-weight:600;color:var(--text-2);margin-bottom:4px">🧪 Lab Tests</div>
+          <div id="cartLabList"><div class="text-xs text-muted">None added</div></div>
+          <div class="search-wrap" style="margin-top:5px">
+            <input class="inp" id="cartLabInp" placeholder="Add test…" autocomplete="off" style="font-size:.8rem">
             <div class="search-drop" id="cartLabDrop"></div>
           </div>
         </div>
-
         <div style="height:1px;background:var(--border)"></div>
-
-        <!-- Cart options -->
         <div class="fg" style="margin-bottom:0">
           <label class="label">Pharmacist</label>
           <select class="inp" id="cartPharm" style="font-size:.8rem">
             <option value="">— Unassigned —</option>
-            {% for ph in available_pharmacists %}
-            <option value="{{ ph.id }}">{{ ph.display_name }}</option>
-            {% endfor %}
+            {% for ph in available_pharmacists %}<option value="{{ ph.id }}">{{ ph.display_name }}</option>{% endfor %}
           </select>
         </div>
         <div class="fg" style="margin-bottom:0">
           <label class="label">Lab Scientist</label>
           <select class="inp" id="cartLabAtt" style="font-size:.8rem">
             <option value="">— Unassigned —</option>
-            {% for att in available_lab_attendants %}
-            <option value="{{ att.id }}">{{ att.display_name }}{% if att.is_available %} ✓{% endif %}</option>
-            {% endfor %}
+            {% for att in available_lab_attendants %}<option value="{{ att.id }}">{{ att.display_name }}{% if att.is_available %} ✓{% endif %}</option>{% endfor %}
           </select>
         </div>
-
-        <div id="cartTotal" style="padding:8px 10px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.78rem;color:var(--text-muted)">Cart is empty</div>
+        <div id="cartTotal" style="padding:7px 9px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.78rem;color:var(--text-muted)">Cart empty</div>
       </div>
     </div>
-
     <div class="modal-footer">
-      <button class="btn btn-ghost btn-sm" onclick="closeNoteModal()">Cancel</button>
-      <button class="btn btn-amber btn-sm" id="extRxBtn" style="display:none" onclick="printExternalRx()">🖨 Print External Rx</button>
-      <button class="btn btn-surface btn-sm" id="checkoutDrugsOnly" style="display:none" onclick="checkoutCart('drugs')">💊 Prescribe Only</button>
-      <button class="btn btn-surface btn-sm" id="checkoutLabsOnly" style="display:none" onclick="checkoutCart('labs')">🧪 Order Labs Only</button>
-      <button class="btn btn-primary btn-sm" onclick="saveNoteAndCheckout()">Save Note &amp; Checkout</button>
-    </div>
-  </div>
-</div>
-
-<!-- External Rx Print Modal -->
-<div class="overlay" id="extRxModal">
-  <div class="modal" style="max-width:600px">
-    <div class="modal-header">
-      <div class="modal-title">External Prescription</div>
-      <button class="modal-close" onclick="R.modal('extRxModal',false)">✕</button>
-    </div>
-    <div class="modal-body" id="extRxPrintArea">
-      <!-- filled by JS -->
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost btn-sm" onclick="R.modal('extRxModal',false)">Close</button>
-      <button class="btn btn-primary btn-sm" onclick="window.print()">🖨 Print</button>
+      <button class="btn btn-ghost btn-sm" onclick="R.modal('noteModal',false)">Cancel</button>
+      <button class="btn btn-amber btn-sm" id="extRxBtn" style="display:none" onclick="openExternalRxPrint()">🖨 Print External Rx</button>
+      <button class="btn btn-primary btn-sm" onclick="saveNoteAndCheckout()">Save &amp; Checkout</button>
     </div>
   </div>
 </div>
@@ -527,7 +483,13 @@
         <input class="inp" id="admDrugInp" placeholder="Search ward drugs…" autocomplete="off">
         <div class="search-drop" id="admDrugDrop"></div>
       </div>
-      <div id="admDrugList" style="margin-top:8px"></div>
+      <div id="admDrugList" style="margin-top:8px;margin-bottom:12px"></div>
+      <div class="section-label">Ward Lab Tests (Optional)</div>
+      <div class="search-wrap">
+        <input class="inp" id="admTestInp" placeholder="Search lab tests…" autocomplete="off">
+        <div class="search-drop" id="admTestDrop"></div>
+      </div>
+      <div id="admTestList" style="margin-top:8px"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost btn-sm" onclick="R.modal('admitModal',false)">Cancel</button>
@@ -572,7 +534,6 @@
             <textarea class="inp" id="surgPostop" rows="2" placeholder="Post-operative care instructions…"></textarea>
           </div>
           <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
-            {% for cb_id, cb_label in forloop.parentloop.parentloop|default:""  %}{% endfor %}
             <label class="flex items-center gap-2 text-sm" style="cursor:pointer"><input type="checkbox" id="sAddProc"> Additional procedures if required</label>
             <label class="flex items-center gap-2 text-sm" style="cursor:pointer"><input type="checkbox" id="sTissue"> Tissue/specimen disposal consent</label>
             <label class="flex items-center gap-2 text-sm" style="cursor:pointer"><input type="checkbox" id="sResidents"> Residents/trainees may be involved</label>
@@ -705,329 +666,323 @@ async function selectRoom(id, card){
   else R.toast(r.error,'err');
 }
 
-// ── NOTE + AI CART SYSTEM ──
-let _cartDrugs = [];
-let _cartLabs  = [];
-let _extDrugs  = [];
-let _cartDrugSearch = null;
-let _cartLabSearch  = null;
-
-function closeNoteModal(){
-  R.modal('noteModal', false);
+// ── AI SUGGESTIONS ──
+async function getAiSuggestions(){
+  const note = document.getElementById('noteText').value.trim();
+  if(!note || note.length < 15){ R.toast('Write a clinical note first','err'); return; }
+  const btn = document.getElementById('aiSuggestBtn');
+  const icon = document.getElementById('aiSuggestIcon');
+  const label = document.getElementById('aiSuggestLabel');
+  const panel = document.getElementById('aiPanel');
+  const content = document.getElementById('aiContent');
+  btn.disabled = true; icon.textContent = '⏳'; label.textContent = 'Thinking…';
+  panel.style.display = 'block';
+  content.innerHTML = '<div class="text-xs text-muted" style="padding:4px 0">Analysing clinical note…</div>';
+  try {
+    const response = await fetch('/records/api/ai-suggest/', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':R.csrf()},
+      body:JSON.stringify({note})
+    });
+    const data = await response.json();
+    if(!response.ok){ content.innerHTML = `<div class="text-xs text-red">${data.error||'AI request failed.'}</div>`; return; }
+    let suggestions;
+    try { suggestions = JSON.parse((data.suggestion||'').replace(/```json|```/g,'').trim()); }
+    catch(e){ content.innerHTML = '<div class="text-xs text-red">Could not parse AI response. Try again.</div>'; return; }
+    // Pre-fetch full drug + test catalogues for chip matching
+    try {
+      const [dr, tr] = await Promise.all([
+        fetch('/records/api/drug-search/?q=').then(r=>r.json()),
+        fetch('/records/api/lab-test-search/?q=').then(r=>r.json()),
+      ]);
+      window._systemDrugs = dr.results || [];
+      window._systemTests = tr.results || [];
+    } catch(e){ window._systemDrugs=[]; window._systemTests=[]; }
+    renderAiSuggestions(suggestions);
+  } catch(err){
+    content.innerHTML = '<div class="text-xs text-red">AI request failed. Check connection.</div>';
+  } finally {
+    btn.disabled = false; icon.textContent = '✨'; label.textContent = 'AI Suggest';
+  }
 }
 
-function openNote(vid, patientName, existingNotes){
-  _cartDrugs = []; _cartLabs = []; _extDrugs = [];
-  document.getElementById('noteVid').value = vid;
-  document.getElementById('noteText').value = '';
-  document.getElementById('notePatientName').textContent = patientName || '';
-  document.getElementById('aiPanel').style.display = 'none';
-  document.getElementById('aiContent').innerHTML = '';
-  document.getElementById('externalRxPanel').style.display = 'none';
-  renderCart();
+function renderAiSuggestions(s){
+  const aiContent = document.getElementById('aiContent');
+  let html = '';
+  if(s.summary) html += `<div class="text-xs text-muted" style="margin-bottom:10px;font-style:italic;padding:6px 8px;background:var(--surface2);border-radius:var(--r-md)">${s.summary}</div>`;
 
-  if(existingNotes && existingNotes.length){
-    document.getElementById('pastNotes').style.display = 'block';
-    document.getElementById('pastNotesList').innerHTML = existingNotes.map(n =>
-      `<div style="padding:8px 10px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:5px">
-        <div class="text-xs text-dim">${n.note}</div>
-        <div class="text-xs text-muted" style="margin-top:3px">${n.created_at}</div>
-      </div>`
-    ).join('');
-  } else {
-    document.getElementById('pastNotes').style.display = 'none';
+  // ── DRUGS ──
+  if(s.drugs?.length){
+    html += `<div class="text-2xs fw-7" style="letter-spacing:.05em;color:var(--text2);margin-bottom:6px;text-transform:uppercase">💊 Suggested Drugs</div>`;
+    html += `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">`;
+    s.drugs.forEach(d => {
+      // Match against system drugs (already fetched in _systemDrugs)
+      const nameLow = d.name.toLowerCase();
+      const match = (_systemDrugs||[]).find(sd =>
+        sd.name.toLowerCase() === nameLow ||
+        sd.name.toLowerCase().includes(nameLow.split(' ')[0]) ||
+        nameLow.includes(sd.name.toLowerCase().split(' ')[0])
+      );
+      if(match){
+        const chipId = 'dchip_' + match.id;
+        html += `<div id="${chipId}"
+          data-drug-id="${match.id}" data-drug-name="${match.name.replace(/"/g,'&quot;')}"
+          data-drug-strength="${(match.strength||'').replace(/"/g,'&quot;')}"
+          data-drug-price="${match.price}" data-drug-inj="${match.is_injection?'1':'0'}"
+          data-drug-dosage="${(d.dosage||'').replace(/"/g,'&quot;')}"
+          onclick="addChipDrug('${chipId}')"
+          style="border:1px solid var(--border2);border-radius:var(--r-md);padding:7px 11px;font-size:.74rem;cursor:pointer;transition:.15s;background:var(--surface2);user-select:none">
+          <div class="fw-6" style="color:var(--text)">${d.name}</div>
+          <div style="font-size:.65rem;color:var(--text-muted);margin-top:1px">${d.dosage||''}</div>
+          <div class="chip-cta" style="color:var(--accent);font-size:.62rem;margin-top:3px;font-weight:700">+ Add to cart</div>
+        </div>`;
+      } else {
+        // Not in system
+        html += `<div onclick="pushExtDrug('${d.name.replace(/'/g,"\\'")}','${(d.dosage||'').replace(/'/g,"\\'")}','${(d.reason||'').replace(/'/g,"\\'")}')"
+          style="border:1px dashed var(--amber-border);border-radius:var(--r-md);padding:7px 11px;font-size:.74rem;background:var(--amber-dim);cursor:pointer;user-select:none">
+          <div class="fw-6" style="color:var(--amber)">${d.name}</div>
+          <div style="font-size:.65rem;color:var(--amber);margin-top:1px">${d.dosage||''}</div>
+          <div style="color:var(--amber);font-size:.62rem;margin-top:3px">⚠ Not in system — click to add to external Rx</div>
+        </div>`;
+      }
+    });
+    html += `</div>`;
   }
 
-  R.modal('noteModal');
-  if(!_cartDrugSearch) _cartDrugSearch = mkDrugSearch('cartDrugInp','cartDrugDrop', d => addToCartDrug(d));
-  if(!_cartLabSearch)  _cartLabSearch  = mkTestSearch('cartLabInp','cartLabDrop', t => addToCartLab(t));
+  // ── LAB TESTS ──
+  if(s.labs?.length){
+    html += `<div class="text-2xs fw-7" style="letter-spacing:.05em;color:var(--text2);margin-bottom:6px;text-transform:uppercase">🧪 Suggested Lab Tests</div>`;
+    html += `<div style="display:flex;flex-wrap:wrap;gap:6px">`;
+    s.labs.forEach(l => {
+      const nameLow = l.name.toLowerCase();
+      const match = (_systemTests||[]).find(t =>
+        t.name.toLowerCase() === nameLow ||
+        t.name.toLowerCase().includes(nameLow.split(' ')[0]) ||
+        nameLow.includes(t.name.toLowerCase().split(' ')[0])
+      );
+      if(match){
+        const chipId = 'lchip_' + match.id;
+        html += `<div id="${chipId}"
+          data-test-id="${match.id}" data-test-name="${match.name.replace(/"/g,'&quot;')}"
+          data-test-price="${match.price}"
+          onclick="addChipLab('${chipId}')"
+          style="border:1px solid var(--border2);border-radius:var(--r-md);padding:7px 11px;font-size:.74rem;cursor:pointer;transition:.15s;background:var(--surface2);user-select:none">
+          <div class="fw-6" style="color:var(--text)">${l.name}</div>
+          <div style="font-size:.65rem;color:var(--text-muted);margin-top:1px">${l.reason||''}</div>
+          <div class="chip-cta" style="color:var(--teal);font-size:.62rem;margin-top:3px;font-weight:700">+ Add to cart</div>
+        </div>`;
+      } else {
+        // Not in system → external
+        html += `<div onclick="pushExtDrug('${l.name.replace(/'/g,"\\'")}','','Lab test — not in system')"
+          style="border:1px dashed var(--amber-border);border-radius:var(--r-md);padding:7px 11px;font-size:.74rem;background:var(--amber-dim);cursor:pointer;user-select:none">
+          <div class="fw-6" style="color:var(--amber)">🧪 ${l.name}</div>
+          <div style="font-size:.65rem;color:var(--amber);margin-top:1px">${l.reason||''}</div>
+          <div style="color:var(--amber);font-size:.62rem;margin-top:3px">⚠ Not in system — click to add to external Rx</div>
+        </div>`;
+      }
+    });
+    html += `</div>`;
+  }
+
+  if(!s.drugs?.length && !s.labs?.length)
+    html = '<div class="text-xs text-muted">No specific suggestions for this note.</div>';
+  aiContent.innerHTML = html;
 }
 
-function addToCartDrug(d){
+function addChipDrug(chipId){
+  const el = document.getElementById(chipId);
+  if(!el || el.dataset.inCart) return;
+  const d = {
+    id: +el.dataset.drugId,
+    name: el.dataset.drugName,
+    strength: el.dataset.drugStrength,
+    price: +el.dataset.drugPrice,
+    is_injection: el.dataset.drugInj === '1',
+    dosage: el.dataset.drugDosage,
+    qty: 1, inj_days: '', inj_times: ''
+  };
   if(_cartDrugs.find(x => x.id === d.id)){ R.toast('Already in cart','warn'); return; }
-  _cartDrugs.push({...d, qty:1, dosage:d.form||'', inj_days:'', inj_times:''});
+  _cartDrugs.push(d);
+  el.dataset.inCart = '1';
+  el.style.borderColor = 'var(--accent)';
+  el.style.background  = 'var(--accent-light)';
+  const cta = el.querySelector('.chip-cta');
+  if(cta){ cta.textContent = '✓ In cart'; cta.style.color = 'var(--accent)'; }
   renderCart();
+  R.toast(`${d.name} added to cart`, 'ok');
 }
-function addToCartLab(t){
+
+function addChipLab(chipId){
+  const el = document.getElementById(chipId);
+  if(!el || el.dataset.inCart) return;
+  const t = {
+    id: +el.dataset.testId,
+    name: el.dataset.testName,
+    price: +el.dataset.testPrice
+  };
   if(_cartLabs.find(x => x.id === t.id)){ R.toast('Already in cart','warn'); return; }
-  _cartLabs.push({...t});
+  _cartLabs.push(t);
+  el.dataset.inCart = '1';
+  el.style.borderColor = 'var(--teal)';
+  el.style.background  = 'var(--teal-light)';
+  const cta = el.querySelector('.chip-cta');
+  if(cta){ cta.textContent = '✓ In cart'; cta.style.color = 'var(--teal)'; }
   renderCart();
+  R.toast(`${t.name} added to cart`, 'ok');
+}
+
+function pushExtDrug(name, dosage, reason){
+  if(_extDrugs.find(x => x.name === name)){ R.toast('Already in external Rx','warn'); return; }
+  _extDrugs.push({name, dosage, reason});
+  const panel = document.getElementById('externalRxPanel');
+  const items  = document.getElementById('externalDrugItems');
+  if(panel) panel.style.display = 'block';
+  if(items) items.innerHTML += `<div style="padding:5px 0;border-bottom:1px solid var(--border);font-size:.78rem">
+    <span class="fw-6" style="color:var(--amber)">${name}</span>
+    ${dosage ? `<span class="text-muted"> — ${dosage}</span>` : ''}
+  </div>`;
+  renderCart();
+  R.toast(`${name} added to external Rx`, 'warn');
+}
+
+// ── CART STATE ──
+let _cartDrugs=[], _cartLabs=[], _extDrugs=[];
+let _cartDrugSearch=null, _cartLabSearch=null;
+
+function openNote(vid){
+  _cartDrugs=[];_cartLabs=[];_extDrugs=[];
+  document.getElementById('noteVid').value=vid;
+  document.getElementById('noteText').value='';
+  document.getElementById('notePatientName').textContent='';
+  document.getElementById('aiPanel').style.display='none';
+  document.getElementById('aiContent').innerHTML='';
+  document.getElementById('externalRxPanel').style.display='none';
+  document.getElementById('externalDrugItems').innerHTML='';
+  document.getElementById('extRxBtn').style.display='none';
+  renderCart();
+  // Load existing notes for this visit
+  fetch(`/records/api/notes/${vid}/`)
+    .then(r=>r.json()).then(d=>{
+      if(d.notes?.length){
+        document.getElementById('pastNotes').style.display='block';
+        document.getElementById('pastNotesList').innerHTML=d.notes.map(n=>
+          `<div style="padding:7px 9px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:4px">
+            <div class="text-xs text-dim">${n.note}</div>
+            <div class="text-xs text-muted" style="margin-top:2px">${n.created_at}</div>
+          </div>`
+        ).join('');
+      } else { document.getElementById('pastNotes').style.display='none'; }
+    }).catch(()=>{ document.getElementById('pastNotes').style.display='none'; });
+  R.modal('noteModal');
+  if(!_cartDrugSearch) _cartDrugSearch=mkDrugSearch('cartDrugInp','cartDrugDrop',d=>{
+    if(_cartDrugs.find(x=>x.id===d.id)){R.toast('Already in cart','warn');return;}
+    _cartDrugs.push({...d,qty:1,dosage:'',inj_days:'',inj_times:''});renderCart();
+  });
+  if(!_cartLabSearch) _cartLabSearch=mkTestSearch('cartLabInp','cartLabDrop',t=>{
+    if(_cartLabs.find(x=>x.id===t.id)){R.toast('Already in cart','warn');return;}
+    _cartLabs.push({...t});renderCart();
+  });
 }
 
 function renderCart(){
-  const dl = document.getElementById('cartDrugList');
-  dl.innerHTML = _cartDrugs.length ? _cartDrugs.map((d,i) => `
-    <div style="padding:7px 9px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:4px">
+  // Drugs
+  const dl=document.getElementById('cartDrugList');
+  dl.innerHTML=_cartDrugs.length?_cartDrugs.map((d,i)=>`
+    <div style="padding:6px 8px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:3px">
       <div class="flex items-center justify-between">
         <span class="fw-6 text-xs">${d.name}${d.strength?` <span class="text-muted">(${d.strength})</span>`:''}</span>
         <button class="drug-remove" onclick="_cartDrugs.splice(${i},1);renderCart()">✕</button>
       </div>
-      <div class="flex gap-1 mt-1" style="flex-wrap:wrap">
-        <input class="inp" style="width:46px;font-size:.75rem;padding:4px 6px" type="number" min="1" value="${d.qty}"
+      <div class="flex gap-1 mt-1">
+        <input class="inp" style="width:44px;font-size:.75rem;padding:3px 5px" type="number" min="1" value="${d.qty}"
           oninput="_cartDrugs[${i}].qty=+this.value;renderCart()">
-        <input class="inp" style="flex:1;min-width:90px;font-size:.75rem;padding:4px 6px" placeholder="Dosage/frequency"
+        <input class="inp" style="flex:1;font-size:.75rem;padding:3px 5px" placeholder="Dosage"
           value="${d.dosage}" oninput="_cartDrugs[${i}].dosage=this.value">
-        ${d.is_injection ? `<input class="inp" style="width:42px;font-size:.75rem;padding:4px 6px" type="number" placeholder="Days"
-          value="${d.inj_days}" oninput="_cartDrugs[${i}].inj_days=this.value">` : ''}
+        ${d.is_injection?`<input class="inp" style="width:40px;font-size:.75rem;padding:3px 5px" type="number" placeholder="Days"
+          value="${d.inj_days}" oninput="_cartDrugs[${i}].inj_days=this.value">`:''}
       </div>
     </div>`).join('')
-    : '<div class="text-xs text-muted">No drugs added yet</div>';
+    :'<div class="text-xs text-muted">None added</div>';
 
-  const ll = document.getElementById('cartLabList');
-  ll.innerHTML = _cartLabs.length ? _cartLabs.map((t,i) => `
-    <div style="padding:7px 9px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between">
+  // Labs
+  const ll=document.getElementById('cartLabList');
+  ll.innerHTML=_cartLabs.length?_cartLabs.map((t,i)=>`
+    <div style="padding:6px 8px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:3px;display:flex;align-items:center;justify-content:space-between">
       <div>
         <div class="fw-6 text-xs">${t.name}</div>
         <div class="text-xs text-muted mono">₦${Number(t.price).toLocaleString()}</div>
       </div>
       <button class="drug-remove" onclick="_cartLabs.splice(${i},1);renderCart()">✕</button>
     </div>`).join('')
-    : '<div class="text-xs text-muted">No tests added yet</div>';
+    :'<div class="text-xs text-muted">None added</div>';
 
-  const drugTotal = _cartDrugs.reduce((s,d) => s + (d.price||0)*(d.qty||1), 0);
-  const labTotal  = _cartLabs.reduce((s,t)  => s + (t.price||0), 0);
-  const tot = document.getElementById('cartTotal');
-  if(_cartDrugs.length || _cartLabs.length){
-    tot.innerHTML = `
-      <div class="flex justify-between text-xs"><span>💊 Drugs</span><span class="mono fw-6">₦${drugTotal.toLocaleString()}</span></div>
-      <div class="flex justify-between text-xs"><span>🧪 Labs</span><span class="mono fw-6">₦${labTotal.toLocaleString()}</span></div>
-      <div class="flex justify-between fw-7 text-sm" style="border-top:1px solid var(--border);margin-top:5px;padding-top:5px;color:var(--text)">
-        <span>Total</span><span class="mono text-teal">₦${(drugTotal+labTotal).toLocaleString()}</span></div>`;
-  } else {
-    tot.innerHTML = '<span class="text-xs text-muted">Cart is empty</span>';
-  }
+  // Total
+  const dTotal=_cartDrugs.reduce((s,d)=>s+(d.price||0)*(d.qty||1),0);
+  const lTotal=_cartLabs.reduce((s,t)=>s+(t.price||0),0);
+  const tot=document.getElementById('cartTotal');
+  if(_cartDrugs.length||_cartLabs.length){
+    tot.innerHTML=`<div class="flex justify-between text-xs"><span>💊 Drugs</span><span class="mono fw-6">₦${dTotal.toLocaleString()}</span></div>
+      <div class="flex justify-between text-xs"><span>🧪 Labs</span><span class="mono fw-6">₦${lTotal.toLocaleString()}</span></div>
+      <div class="flex justify-between fw-7" style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;font-size:.8rem">
+        <span>Total</span><span class="mono text-teal">₦${(dTotal+lTotal).toLocaleString()}</span></div>`;
+  } else { tot.innerHTML='<span class="text-xs text-muted">Cart empty</span>'; }
 
-  document.getElementById('extRxBtn').style.display        = _extDrugs.length ? '' : 'none';
-  document.getElementById('checkoutDrugsOnly').style.display = (_cartDrugs.length && !_cartLabs.length) ? '' : 'none';
-  document.getElementById('checkoutLabsOnly').style.display  = (_cartLabs.length && !_cartDrugs.length) ? '' : 'none';
-}
-
-async function getAiSuggestions(){
-  const note = document.getElementById('noteText').value.trim();
-  if(!note || note.length < 15){ R.toast('Write a note first (min 15 chars)','err'); return; }
-  const btn=document.getElementById('aiSuggestBtn');
-  btn.disabled=true;
-  document.getElementById('aiSuggestIcon').textContent='⏳';
-  document.getElementById('aiSuggestLabel').textContent='Thinking…';
-  document.getElementById('aiPanel').style.display='block';
-  document.getElementById('aiContent').innerHTML='<div class="text-xs text-muted">Analysing clinical note…</div>';
-  try {
-    const res = await fetch('/records/api/ai-suggest/',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','X-CSRFToken':R.csrf()},
-      body:JSON.stringify({note})
-    });
-    const data = await res.json();
-    if(!res.ok){ document.getElementById('aiContent').innerHTML=`<div class="text-xs text-red">${data.error||'AI request failed.'}</div>`; return; }
-    let s;
-    try{ s = JSON.parse((data.suggestion||'').replace(/```json|```/g,'').trim()); }
-    catch(e){ document.getElementById('aiContent').innerHTML='<div class="text-xs text-red">Could not parse AI response.</div>'; return; }
-    await renderAiSuggestions(s);
-  } catch(err){
-    document.getElementById('aiContent').innerHTML='<div class="text-xs text-red">AI request failed.</div>';
-  } finally {
-    btn.disabled=false;
-    document.getElementById('aiSuggestIcon').textContent='✨';
-    document.getElementById('aiSuggestLabel').textContent='AI Suggest';
-  }
-}
-
-async function renderAiSuggestions(s){
-  let systemDrugs = [];
-  try{ const r=await fetch('/records/api/drug-search/?q='); const d=await r.json(); systemDrugs=d.results||[]; }catch(e){}
-  _extDrugs = [];
-  let html = '';
-  if(s.summary) html+=`<div class="text-xs text-muted" style="margin-bottom:10px;font-style:italic;padding:6px 8px;background:var(--bg-elevated);border-radius:var(--radius-sm)">${s.summary}</div>`;
-
-  if(s.drugs?.length){
-    html+=`<div class="text-2xs fw-7" style="letter-spacing:.05em;color:var(--text-2);margin-bottom:6px;text-transform:uppercase">💊 Suggested Drugs</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">`;
-    s.drugs.forEach(d => {
-      const match = systemDrugs.find(sd =>
-        sd.name.toLowerCase().includes(d.name.toLowerCase().split(' ')[0]) ||
-        d.name.toLowerCase().includes(sd.name.toLowerCase().split(' ')[0])
-      );
-      if(match){
-        html+=`<div onclick="addAiChipDrug(this)"
-          data-id="${match.id}" data-name="${match.name.replace(/"/g,'&quot;')}"
-          data-strength="${(match.strength||'').replace(/"/g,'&quot;')}"
-          data-price="${match.price}" data-inj="${match.is_injection?'1':'0'}"
-          data-dosage="${(d.dosage||'').replace(/"/g,'&quot;')}"
-          title="${(d.reason||'').replace(/"/g,'&quot;')}"
-          style="border:1px solid var(--border-strong);border-radius:var(--radius);padding:7px 11px;font-size:.74rem;cursor:pointer;transition:.15s;background:var(--bg-elevated);user-select:none">
-          <div class="fw-6" style="color:var(--text)">${d.name}</div>
-          <div style="font-size:.65rem;color:var(--text-muted);margin-top:1px">${d.dosage||''}</div>
-          <div class="chip-cta" style="color:var(--accent);font-size:.62rem;margin-top:3px;font-weight:700">+ Add to cart</div>
-        </div>`;
-      } else {
-        _extDrugs.push({name:d.name, dosage:d.dosage||'', reason:d.reason||''});
-        html+=`<div style="border:1px dashed var(--amber-border);border-radius:var(--radius);padding:7px 11px;font-size:.74rem;background:var(--amber-dim);cursor:default">
-          <div class="fw-6" style="color:var(--amber)">${d.name}</div>
-          <div style="font-size:.65rem;color:var(--amber);margin-top:1px">${d.dosage||''}</div>
-          <div style="color:var(--amber);font-size:.62rem;margin-top:3px">⚠ Not in system</div>
-        </div>`;
-      }
-    });
-    html+=`</div>`;
-  }
-
-  if(s.labs?.length){
-    html+=`<div class="text-2xs fw-7" style="letter-spacing:.05em;color:var(--text-2);margin-bottom:6px;text-transform:uppercase">🧪 Suggested Lab Tests</div><div style="display:flex;flex-wrap:wrap;gap:6px">`;
-    s.labs.forEach(l => {
-      html+=`<div onclick="addAiChipLabByName('${l.name.replace(/'/g,"\'")}','${(l.reason||'').replace(/'/g,"\'")}')"
-        title="${(l.reason||'').replace(/"/g,'&quot;')}"
-        style="border:1px solid var(--border-strong);border-radius:var(--radius);padding:7px 11px;font-size:.74rem;cursor:pointer;transition:.15s;background:var(--bg-elevated);user-select:none">
-        <div class="fw-6" style="color:var(--text)">${l.name}</div>
-        <div style="font-size:.65rem;color:var(--text-muted);margin-top:1px">${l.reason||''}</div>
-        <div class="chip-cta" style="color:var(--teal);font-size:.62rem;margin-top:3px;font-weight:700">+ Add to cart</div>
-      </div>`;
-    });
-    html+=`</div>`;
-  }
-  if(!s.drugs?.length && !s.labs?.length) html='<div class="text-xs text-muted">No specific suggestions for this note.</div>';
-  document.getElementById('aiContent').innerHTML = html;
-
-  if(_extDrugs.length){
-    document.getElementById('externalRxPanel').style.display='block';
-    document.getElementById('externalDrugItems').innerHTML = _extDrugs.map(d =>
-      `<div style="padding:5px 0;border-bottom:1px solid var(--border);font-size:.78rem">
-        <span class="fw-6" style="color:var(--amber)">${d.name}</span>
-        ${d.dosage?`<span class="text-muted"> — ${d.dosage}</span>`:''}
-      </div>`
-    ).join('');
-  }
-  renderCart();
-}
-
-function addAiChipDrug(el){
-  if(el.dataset.inCart){ R.toast('Already in cart','warn'); return; }
-  _cartDrugs.push({
-    id:+el.dataset.id, name:el.dataset.name, strength:el.dataset.strength,
-    price:+el.dataset.price, is_injection:el.dataset.inj==='1',
-    dosage:el.dataset.dosage, qty:1, inj_days:'', inj_times:''
-  });
-  el.dataset.inCart='1';
-  el.style.borderColor='var(--accent)';
-  el.style.background='var(--accent-dim)';
-  const cta=el.querySelector('.chip-cta');
-  if(cta){ cta.textContent='✓ In cart'; cta.style.color='var(--accent)'; }
-  renderCart();
-  R.toast(`${el.dataset.name} added to cart`,'ok');
-}
-
-async function addAiChipLabByName(name, reason){
-  try{
-    const r=await fetch(`/records/api/lab-test-search/?q=${encodeURIComponent(name)}`);
-    const data=await r.json();
-    if(data.results?.length){
-      const t=data.results[0];
-      if(_cartLabs.find(x=>x.id===t.id)){ R.toast('Already in cart','warn'); return; }
-      _cartLabs.push(t); renderCart();
-      R.toast(`${t.name} added to cart`,'ok');
-      // Mark chip visual
-      document.querySelectorAll('[onclick*="addAiChipLabByName"]').forEach(el=>{
-        if(el.textContent.includes(name)){
-          el.style.borderColor='var(--teal)'; el.style.background='var(--teal-dim)';
-          const cta=el.querySelector('.chip-cta');
-          if(cta){ cta.textContent='✓ In cart'; cta.style.color='var(--teal)'; }
-        }
-      });
-    } else { R.toast(`${name} not found in system`,'warn'); }
-  } catch(e){ R.toast('Error searching tests','err'); }
-}
-
-function printExternalRx(){
-  const vid=document.getElementById('noteVid').value;
-  const note=document.getElementById('noteText').value.trim();
-  const patientName=document.getElementById('notePatientName').textContent;
-  const date=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
-  const rows=_extDrugs.map(d=>`
-    <tr style="border-bottom:1px solid #e0e0e0">
-      <td style="padding:10px 8px;font-weight:600">${d.name}</td>
-      <td style="padding:10px 8px">${d.dosage||'As directed'}</td>
-      <td style="padding:10px 8px;color:#666;font-size:.82rem">${d.reason||''}</td>
-    </tr>`).join('');
-  document.getElementById('extRxPrintArea').innerHTML=`
-    <div style="font-family:Georgia,serif;color:#111;padding:8px">
-      <div style="text-align:center;border-bottom:2px solid #111;padding-bottom:16px;margin-bottom:20px">
-        <div style="font-size:1.4rem;font-weight:800">Rhudesi Hospital</div>
-        <div style="font-size:.85rem;color:#555;margin-top:4px">External Prescription</div>
-      </div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:16px;font-size:.85rem">
-        <div><strong>Patient:</strong> ${patientName}</div>
-        <div><strong>Date:</strong> ${date}</div>
-        <div><strong>Visit #:</strong> ${vid}</div>
-      </div>
-      ${note?`<div style="margin-bottom:16px;padding:10px;background:#f8f8f8;border-left:3px solid #111;font-size:.82rem"><strong>Clinical Note:</strong> ${note}</div>`:''}
-      <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Prescribed Medications (External — Not available in hospital pharmacy)</div>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
-        <thead><tr style="background:#f0f0f0">
-          <th style="padding:8px;text-align:left;font-size:.78rem;border-bottom:2px solid #111">Drug Name</th>
-          <th style="padding:8px;text-align:left;font-size:.78rem;border-bottom:2px solid #111">Dosage / Instructions</th>
-          <th style="padding:8px;text-align:left;font-size:.78rem;border-bottom:2px solid #111">Indication</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <div style="font-size:.75rem;color:#888;border-top:1px dashed #ccc;padding-top:8px;margin-bottom:32px">
-        ⚠ These medications are not currently stocked at Rhudesi Hospital pharmacy. Please obtain from an external pharmacy and bring receipt on next visit.
-      </div>
-      <div style="display:flex;justify-content:space-between;margin-top:48px;gap:48px">
-        <div style="flex:1;border-top:2px solid #111;padding-top:10px;text-align:center">
-          <div style="font-size:.78rem;color:#555;margin-bottom:4px">Doctor's Signature &amp; Stamp</div>
-          <div style="font-size:.72rem;color:#888">Name: ___________________________</div>
-        </div>
-        <div style="flex:1;border-top:2px solid #111;padding-top:10px;text-align:center">
-          <div style="font-size:.78rem;color:#555;margin-bottom:4px">Patient's Signature</div>
-          <div style="font-size:.72rem;color:#888">Name: ___________________________</div>
-        </div>
-      </div>
-    </div>`;
-  R.modal('extRxModal');
+  document.getElementById('extRxBtn').style.display=_extDrugs.length?'':'none';
 }
 
 async function saveNoteAndCheckout(){
   const vid=document.getElementById('noteVid').value;
   const note=document.getElementById('noteText').value.trim();
-  if(!note){ R.toast('Enter a clinical note first','err'); return; }
+  if(!note){R.toast('Enter a clinical note first','err');return;}
+
+  // 1. Save note
   const nr=await R.post(`/records/api/note/${vid}/`,{note});
-  if(nr.status!=='ok'){ R.toast(nr.error||'Could not save note','err'); return; }
+  if(nr.status!=='ok'){R.toast(nr.error||'Could not save note','err');return;}
   R.toast('Note saved ✓','ok');
 
+  // 2. Rx if drugs
   if(_cartDrugs.length){
     const fd=new FormData();
     fd.append('csrfmiddlewaretoken',R.csrf());
     fd.append('pharmacist_id',document.getElementById('cartPharm').value);
     fd.append('note','');
     _cartDrugs.forEach(d=>{
-      fd.append('drug_ids[]',d.id);
-      fd.append('dosages[]',d.dosage||'');
-      fd.append('quantities[]',d.qty||1);
-      fd.append('injection_days[]',d.inj_days||'');
+      fd.append('drug_ids[]',d.id);fd.append('dosages[]',d.dosage||'');
+      fd.append('quantities[]',d.qty||1);fd.append('injection_days[]',d.inj_days||'');
       fd.append('injection_times[]',d.inj_times||'');
     });
     const rr=await fetch(`/records/api/prescribe/${vid}/`,{method:'POST',body:fd});
     const rd=await rr.json();
-    if(rd.status==='ok') R.toast('💊 Prescription → Accountant','ok');
-    else{ R.toast(rd.error||'Rx error','err'); return; }
+    if(rd.status==='ok') R.toast('💊 Rx → Accountant','ok');
+    else{R.toast(rd.error||'Rx error','err');return;}
   }
 
+  // 3. Lab if tests
   if(_cartLabs.length){
     const fd=new FormData();
     fd.append('csrfmiddlewaretoken',R.csrf());
     fd.append('lab_attendant_id',document.getElementById('cartLabAtt').value);
     fd.append('note','');
-    _cartLabs.forEach(t=>{
-      fd.append('test_ids[]',t.id);
-      fd.append('test_notes[]','');
-    });
+    _cartLabs.forEach(t=>{fd.append('test_ids[]',t.id);fd.append('test_notes[]','');});
     const lr=await fetch(`/records/api/order-lab/${vid}/`,{method:'POST',body:fd});
     const ld=await lr.json();
-    if(ld.status==='ok') R.toast('🧪 Lab order → Accountant','ok');
-    else{ R.toast(ld.error||'Lab error','err'); return; }
+    if(ld.status==='ok') R.toast('🧪 Lab → Accountant','ok');
+    else{R.toast(ld.error||'Lab error','err');return;}
   }
 
-  closeNoteModal();
-  setTimeout(()=>location.reload(),800);
+  R.modal('noteModal',false);
+  setTimeout(()=>location.reload(),700);
 }
+
+function openExternalRxPrint(){
+  const vid=document.getElementById('noteVid').value;
+  const note=encodeURIComponent(document.getElementById('noteText').value.trim());
+  const params=_extDrugs.map(d=>
+    `drug=${encodeURIComponent(d.name+'|'+d.dosage+'|'+d.reason)}`
+  ).join('&');
+  window.open(`/records/print/external-rx/${vid}/?${params}&note=${note}`,'_blank');
+}
+
 // ── LAB ──
 let labTests=[],_labSearch=null;
 function openLab(vid){
@@ -1111,12 +1066,33 @@ function calcAdmTotal(){const f=+document.getElementById('admFee')?.value||0;con
 function calcAdmPayable(){const total=+document.getElementById('admTotal')?.value||0;const disc=+document.getElementById('admDiscount')?.value||0;const payable=Math.max(0,total-disc);document.getElementById('admPayable').value=payable.toFixed(0);renderAdmParts();}
 function renderAdmParts(){const parts=+document.getElementById('admParts')?.value||1;const payable=+document.getElementById('admPayable')?.value||0;const perPart=parts>0?+(payable/parts).toFixed(2):payable;const list=document.getElementById('admPartsList');if(!list)return;if(parts<=1){list.innerHTML='';return;}list.innerHTML=Array.from({length:parts},(_,i)=>`<div class="drug-row" style="margin-bottom:5px"><div class="drug-name">Part ${i+1}</div><input class="inp mono" style="width:130px;flex-shrink:0" type="number" id="admPart${i}" value="${perPart}"></div>`).join('');}
 let _admSearch=null;
-function openAdmit(vid){admDrugs=[];renderAdmDrugs();['admVid','admReason','admFee','admDiscount','admPartsList','admBed'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});document.getElementById('admDays').value='1';document.getElementById('admTotal').value='';document.getElementById('admPayable').value='';document.getElementById('admBedGrid').innerHTML='<span class="text-xs text-muted">Select ward first</span>';document.getElementById('admWard').value='';document.getElementById('admVid').value=vid;R.modal('admitModal');if(!_admSearch)_admSearch=mkDrugSearch('admDrugInp','admDrugDrop',d=>{if(!admDrugs.find(x=>x.id===d.id)){admDrugs.push({...d,qty:1,dosage:''});renderAdmDrugs();}});}
+function openAdmit(vid){admDrugs=[];admTests=[];renderAdmDrugs();renderAdmTests();['admVid','admReason','admFee','admDiscount','admPartsList','admBed'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});document.getElementById('admDays').value='1';document.getElementById('admTotal').value='';document.getElementById('admPayable').value='';document.getElementById('admBedGrid').innerHTML='<span class="text-xs text-muted">Select ward first</span>';document.getElementById('admWard').value='';document.getElementById('admVid').value=vid;R.modal('admitModal');if(!_admSearch)_admSearch=mkDrugSearch('admDrugInp','admDrugDrop',d=>{if(!admDrugs.find(x=>x.id===d.id)){admDrugs.push({...d,qty:1,dosage:''});renderAdmDrugs();}});if(!_admTestSearch)_admTestSearch=mkTestSearch('admTestInp','admTestDrop',t=>{if(!admTests.find(x=>x.id===t.id)){admTests.push({...t});renderAdmTests();}});}
 function renderAdmDrugs(){document.getElementById('admDrugList').innerHTML=admDrugs.map((d,i)=>`<div class="drug-row"><div class="drug-name">${d.name}<span class="drug-meta">₦${Number(d.price).toLocaleString()}</span></div><input class="inp" style="width:58px;flex-shrink:0" type="number" value="${d.qty}" min="1" oninput="admDrugs[${i}].qty=+this.value"><input class="inp" style="flex:1" placeholder="Dosage" value="${d.dosage}" oninput="admDrugs[${i}].dosage=this.value"><button class="drug-remove" onclick="admDrugs.splice(${i},1);renderAdmDrugs()">✕</button></div>`).join('');}
-async function submitAdmit(){const vid=document.getElementById('admVid').value;const ward=document.getElementById('admWard').value;const bed=document.getElementById('admBed').value;const reason=document.getElementById('admReason').value.trim();if(!ward||!bed||!reason){R.toast('Select ward, bed and enter reason','err');return;}const days=+document.getElementById('admDays').value||1;const fd=new FormData();fd.append('csrfmiddlewaretoken',R.csrf());fd.append('ward',ward);fd.append('bed_number',bed);fd.append('daily_ward_fee',document.getElementById('admFee').value||0);fd.append('total_admission_fee',document.getElementById('admTotal').value||0);fd.append('discount_amount',document.getElementById('admDiscount').value||0);fd.append('est_days',days);fd.append('admission_reason',reason);admDrugs.forEach(d=>{fd.append('drug_ids[]',d.id);fd.append('dosages[]',d.dosage||'');fd.append('quantities[]',d.qty||1);});const r=await fetch(`/records/api/admit/${vid}/`,{method:'POST',body:fd});const res=await r.json();if(res.status==='ok'){
+let admTests=[],_admTestSearch=null;
+function renderAdmTests(){document.getElementById('admTestList').innerHTML=admTests.length?admTests.map((t,i)=>`<div class="drug-row"><div class="drug-name">${t.name}<span class="drug-meta">${t.category||''} · ₦${Number(t.price).toLocaleString()}</span></div><button class="drug-remove" onclick="admTests.splice(${i},1);renderAdmTests()">✕</button></div>`).join(''):'<div class="text-xs text-muted">No tests added</div>';}
+async function submitAdmit(){
+  const vid=document.getElementById('admVid').value;
+  const ward=document.getElementById('admWard').value;
+  const bed=document.getElementById('admBed').value;
+  const reason=document.getElementById('admReason').value.trim();
+  if(!ward||!bed||!reason){R.toast('Select ward, bed and enter reason','err');return;}
+  const days=+document.getElementById('admDays').value||1;
+  const fd=new FormData();
+  fd.append('csrfmiddlewaretoken',R.csrf());
+  fd.append('ward',ward);
+  fd.append('bed_number',bed);
+  fd.append('daily_ward_fee',document.getElementById('admFee').value||0);
+  fd.append('total_admission_fee',document.getElementById('admTotal').value||0);
+  fd.append('discount_amount',document.getElementById('admDiscount').value||0);
+  fd.append('est_days',days);
+  fd.append('admission_reason',reason);
+  admDrugs.forEach(d=>{fd.append('drug_ids[]',d.id);fd.append('dosages[]',d.dosage||'');fd.append('quantities[]',d.qty||1);});
+  (admTests||[]).forEach(t=>{fd.append('ward_test_ids[]',t.id);});
+  const r=await fetch(`/records/api/admit/${vid}/`,{method:'POST',body:fd});
+  const res=await r.json();
+  if(res.status==='ok'){
     R.toast('Admission created — awaiting payment','ok');
     R.modal('admitModal',false);
-    // Stay on dashboard — show pending overlay on the visit card
     const card=document.getElementById('vc'+vid);
     if(card){
       card.style.opacity='.65';
@@ -1131,11 +1107,12 @@ async function submitAdmit(){const vid=document.getElementById('admVid').value;c
       if(header){
         const banner=document.createElement('div');
         banner.style.cssText='padding:8px 14px;background:var(--teal-dim);border-top:1px solid var(--teal-border);font-size:.78rem;color:var(--teal);display:flex;align-items:center;gap:8px';
-        banner.innerHTML='🛏 Admission pending — patient remains here until accountant confirms payment and nurse admits them to ward.';
+        banner.innerHTML='🛏 Admission pending payment confirmation. Patient stays in queue until accountant confirms and nurse admits to ward.';
         header.after(banner);
       }
     }
-  }else R.toast(res.error,'err');}
+  } else R.toast(res.error,'err');
+}
 
 // ── SURGERY ──
 let surgDrugs=[],surgTests=[],_surgDrugSearch=null,_surgTestSearch=null;

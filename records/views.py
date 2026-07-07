@@ -359,7 +359,37 @@ def admit_patient(request, visit_id):
                         payment_type='admission_medication',
                         amount=med_total,
                         admission=admission,
-                        payment_group=group,  # same group so it appears in same accountant tab
+                        payment_group=group,
+                    )
+
+            # Ward lab tests ordered at admission time
+            ward_test_ids = d.getlist('ward_test_ids[]')
+            if ward_test_ids:
+                lr = LabRequest.objects.create(
+                    visit=visit, patient=visit.patient, doctor=request.user,
+                    accountant=visit.accountant,
+                    doctor_note='Ward patient lab request',
+                    status='pending_payment',
+                )
+                lab_total = 0
+                for test_id in ward_test_ids:
+                    try:
+                        test = LabTest.objects.get(pk=test_id)
+                        LabRequestTest.objects.create(
+                            request=lr, test=test,
+                            price_at_time=test.price,
+                        )
+                        lab_total += test.price
+                    except LabTest.DoesNotExist:
+                        pass
+                if lab_total > 0:
+                    lr.total_price = lab_total
+                    lr.save()
+                    Payment.objects.create(
+                        visit=visit, patient=visit.patient, accountant=visit.accountant,
+                        payment_type='lab', amount=lab_total,
+                        lab_request=lr,
+                        payment_group=group,
                     )
 
         return JsonResponse({'status': 'ok', 'admission_id': admission.pk})
@@ -595,8 +625,10 @@ def ward_occupancy(request):
 @login_required
 def print_lab_results(request, lr_id):
     from lab.models import LabRequest
-
     lr = get_object_or_404(LabRequest, pk=lr_id)
+    if request.user not in [lr.patient, lr.doctor, lr.lab_attendant] and not request.user.is_staff:
+        if request.user.role not in ['lab_attendant', 'doctor']:
+            return redirect('dashboard')
     return render(request, 'lab_results_print.html', {'lr': lr})
 
 
@@ -957,3 +989,52 @@ Maximum 5 drugs and 5 laboratory tests.
             },
             status=500
         )
+
+@login_required
+def print_external_rx(request, visit_id):
+    """Render a printable external prescription for drugs not in the system."""
+    from records.models import PatientVisit
+    from django.utils import timezone
+
+    visit = get_object_or_404(
+        PatientVisit.objects.select_related('patient', 'doctor'),
+        pk=visit_id,
+        doctor=request.user,
+    )
+
+    # ext_drugs comes from GET params: ?drug=Amoxicillin|500mg twice daily|reason&drug=...
+    # The doctor.html JS builds this URL before opening the print window
+    raw = request.GET.getlist('drug')
+    ext_drugs = []
+    for item in raw:
+        parts = item.split('|')
+        ext_drugs.append({
+            'name':   parts[0] if len(parts) > 0 else '',
+            'dosage': parts[1] if len(parts) > 1 else '',
+            'reason': parts[2] if len(parts) > 2 else '',
+        })
+
+    note = request.GET.get('note', '')
+
+    return render(request, 'external_rx_print.html', {
+        'visit':     visit,
+        'ext_drugs': ext_drugs,
+        'note':      note,
+        'today':     timezone.localdate().strftime('%d %B %Y'),
+    })
+
+
+@login_required
+def get_doctor_notes(request, visit_id):
+    """Return existing notes for a visit so the note modal can display them."""
+    if not _is_role(request.user, 'doctor'):
+        return JsonResponse({'error': 'forbidden'}, status=403)
+    visit = get_object_or_404(PatientVisit, pk=visit_id, doctor=request.user)
+    notes = [
+        {
+            'note': n.note,
+            'created_at': n.created_at.strftime('%d %b %Y, %H:%M'),
+        }
+        for n in visit.doctor_notes.order_by('-created_at')
+    ]
+    return JsonResponse({'notes': notes})
