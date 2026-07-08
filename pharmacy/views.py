@@ -97,6 +97,26 @@ def delete_dispensed(request, rx_id):
 
 
 @login_required
+def void_prescription(request, rx_id):
+    """
+    Pharmacist voids a prescription — patient no longer wants the drugs
+    or has left. Sets status to 'voided' so it disappears from the
+    pending dashboard but is still auditable.
+    """
+    if request.method != 'POST' or request.user.role != 'pharmacist':
+        return JsonResponse({'error': 'forbidden'}, status=403)
+    rx = get_object_or_404(
+        Prescription, pk=rx_id,
+        pharmacist=request.user,
+        status='paid'
+    )
+    rx.status = 'voided'
+    rx.pharmacist_note = request.POST.get('note', 'Voided by pharmacist')
+    rx.save()
+    return JsonResponse({'status': 'ok'})
+
+
+@login_required
 def print_prescription(request, rx_id):
     rx = get_object_or_404(Prescription, pk=rx_id)
     if request.user not in [rx.patient, rx.pharmacist, rx.doctor] and request.user.role not in ['accountant']:
