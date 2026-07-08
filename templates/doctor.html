@@ -864,15 +864,41 @@ function addChipLab(chipId){
 function pushExtDrug(name, dosage, reason){
   if(_extDrugs.find(x => x.name === name)){ R.toast('Already in external Rx','warn'); return; }
   _extDrugs.push({name, dosage, reason});
-  const panel = document.getElementById('externalRxPanel');
-  const items  = document.getElementById('externalDrugItems');
-  if(panel) panel.style.display = 'block';
-  if(items) items.innerHTML += `<div style="padding:5px 0;border-bottom:1px solid var(--border);font-size:.78rem">
-    <span class="fw-6" style="color:var(--amber)">${name}</span>
-    ${dosage ? `<span class="text-muted"> — ${dosage}</span>` : ''}
-  </div>`;
+  renderExtDrugs();
   renderCart();
   R.toast(`${name} added to external Rx`, 'warn');
+}
+
+function removeExtDrug(name){
+  _extDrugs = _extDrugs.filter(x => x.name !== name);
+  renderExtDrugs();
+  renderCart();
+  R.toast(`${name} removed from external Rx`, 'ok');
+}
+
+function renderExtDrugs(){
+  const panel = document.getElementById('externalRxPanel');
+  const items  = document.getElementById('externalDrugItems');
+  if(!panel || !items) return;
+  if(!_extDrugs.length){
+    panel.style.display = 'none';
+    items.innerHTML = '';
+    return;
+  }
+  panel.style.display = 'block';
+  items.innerHTML = _extDrugs.map((d, i) => `
+    <div style="padding:6px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div style="font-size:.78rem;min-width:0">
+        <span class="fw-6" style="color:var(--amber)">${d.name}</span>
+        ${d.dosage ? `<span class="text-muted"> — ${d.dosage}</span>` : ''}
+        ${d.reason && d.reason !== 'Lab test — not in system' ? `<div style="font-size:.68rem;color:var(--text-muted);margin-top:1px">${d.reason}</div>` : ''}
+      </div>
+      <button onclick="removeExtDrug('${d.name.replace(/'/g,"\'")}')"
+        style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:.8rem;padding:2px 5px;border-radius:var(--radius-sm);flex-shrink:0"
+        onmouseenter="this.style.background='var(--red-dim)';this.style.color='var(--red)'"
+        onmouseleave="this.style.background='none';this.style.color='var(--text-muted)'"
+        title="Remove from external Rx">✕</button>
+    </div>`).join('');
 }
 
 // ── CART STATE ──

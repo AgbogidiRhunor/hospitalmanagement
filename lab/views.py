@@ -104,6 +104,23 @@ def mark_in_progress(request, lr_id):
 
 
 @login_required
+def void_lab_request(request, lr_id):
+    """
+    Lab scientist voids a lab request — patient no longer wants tests
+    or has left. Sets status to 'voided' so it disappears from dashboard.
+    """
+    if request.method != 'POST' or request.user.role != 'lab_attendant':
+        return JsonResponse({'error': 'forbidden'}, status=403)
+    lr = get_object_or_404(
+        LabRequest, pk=lr_id,
+        lab_attendant=request.user,
+        status__in=['paid', 'in_progress']
+    )
+    lr.status = 'voided'
+    lr.save()
+    return JsonResponse({'status': 'ok'})
+
+
 def delete_completed(request, lr_id):
     if request.method == 'POST' and request.user.role == 'lab_attendant':
         lr = get_object_or_404(LabRequest, pk=lr_id, lab_attendant=request.user, status='completed')

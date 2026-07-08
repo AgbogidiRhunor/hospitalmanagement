@@ -85,6 +85,8 @@
         {% if lr.status != 'in_progress' %}
         <button class="btn btn-blue btn-xs" onclick="markInProgress({{ lr.id }},this)">▶ Start</button>
         {% endif %}
+        <button class="btn btn-surface btn-xs" title="Void — patient no longer needs these tests"
+          onclick="voidLr({{ lr.id }},this)">🗑 Void</button>
         <svg id="lrch{{ lr.id }}" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--text3);transition:transform .2s">
           <path d="M3 5l4 4 4-4"/>
         </svg>
@@ -292,6 +294,19 @@ async function submitResult(testId, lrId){
     if(el){ el.style.borderColor = 'var(--teal-border)'; el.style.background = 'var(--teal-light)'; }
     setTimeout(() => location.reload(), 800);
   } else R.toast(res.error,'err');
+}
+
+async function voidLr(lrId, btn){
+  if(!confirm('Void this lab request? The patient will not receive these tests.')) return;
+  btn.disabled=true; btn.textContent='…';
+  try {
+    const r = await R.post(`/lab/void/${lrId}/`, {});
+    if(r.status==='ok'){
+      R.toast('Lab request voided','warn');
+      const card = document.getElementById('lr'+lrId);
+      if(card){ card.style.opacity='0.25'; card.style.borderColor='var(--red-border)'; setTimeout(()=>card.remove(),500); }
+    } else { R.toast(r.error||'Could not void','err'); btn.disabled=false; btn.textContent='🗑 Void'; }
+  } catch(e){ R.toast('Network error','err'); btn.disabled=false; btn.textContent='🗑 Void'; }
 }
 </script>
 {% endblock %}

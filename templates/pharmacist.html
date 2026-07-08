@@ -12,11 +12,9 @@
     <span class="sb-badge">{{ my_pending|length }}</span>
   {% endif %}
 </a>
-
 <a href="{% url 'pharmacist_dispensed' %}" class="sb-item">
   <span class="sb-icon">✅</span> Dispensed
 </a>
-
 <a href="{% url 'pharmacist_inventory' %}" class="sb-item">
   <span class="sb-icon">🗃</span> Inventory
 </a>
@@ -28,33 +26,27 @@
 {% csrf_token %}
 
 {% if not my_pending and not unassigned %}
-
 <div class="card">
   <div class="empty-state">
     <div class="empty-icon">✅</div>
     <div class="empty-title" style="color:var(--teal)">All clear!</div>
-    <div class="empty-sub">
-      No prescriptions available right now.
-    </div>
+    <div class="empty-sub">No prescriptions available right now.</div>
   </div>
 </div>
 
 {% else %}
 
-<!-- UNASSIGNED PRESCRIPTIONS -->
+<!-- UNASSIGNED -->
 {% if unassigned %}
-<div class="section-label" style="margin-top:10px;">Available Prescriptions</div>
-
+<div class="section-label" style="margin-top:10px">Available Prescriptions</div>
 {% for rx in unassigned %}
 <div class="visit-card" style="margin-bottom:10px;border-color:var(--amber-border)">
-  
   <div class="vc-header">
     <div class="vc-info">
       <div class="vc-name">
         {{ rx.patient.display_name }}
         <span class="badge b-amber">Available</span>
       </div>
-
       <div class="vc-meta">
         <span>Dr. {{ rx.doctor.display_name }}</span>
         <span class="vc-meta-dot"></span>
@@ -63,33 +55,28 @@
         <span class="mono">₦{{ rx.total_price|floatformat:0 }}</span>
       </div>
     </div>
-
-    <button class="btn btn-teal btn-sm"
-            onclick="takeRx({{ rx.id }}, this)">
-      Take
-    </button>
+    <button class="btn btn-teal btn-sm" onclick="takeRx({{ rx.id }}, this)">Take</button>
   </div>
-
 </div>
 {% endfor %}
 {% endif %}
 
-<!-- MY ASSIGNED PRESCRIPTIONS -->
+<!-- MY ASSIGNED -->
 {% if my_pending %}
-<div class="section-label" style="margin-top:20px;">My Assigned Work</div>
-
+<div class="section-label" style="margin-top:20px">My Assigned Work</div>
 {% for rx in my_pending %}
-<div class="visit-card" style="margin-bottom:10px;border-color:var(--teal-border)">
+<div class="visit-card" id="rxcard{{ rx.id }}" style="margin-bottom:10px;border-color:var(--teal-border)">
 
   <div class="vc-header" onclick="toggleRx('{{ rx.id }}')">
     <div class="vc-queue" style="background:var(--teal-dim);color:var(--teal);border-color:var(--teal-border)">💊</div>
-
     <div class="vc-info">
       <div class="vc-name">
         {{ rx.patient.display_name }}
         <span class="badge b-teal">My Work</span>
+        {% if rx.doctor_note|slice:":19" == "Surgery drugs for:" %}
+        <span class="badge b-purple">⚕ Surgery</span>
+        {% endif %}
       </div>
-
       <div class="vc-meta">
         <span>Dr. {{ rx.doctor.display_name }}</span>
         <span class="vc-meta-dot"></span>
@@ -100,36 +87,31 @@
         <span>{{ rx.created_at|date:"d M, H:i" }}</span>
       </div>
     </div>
+    <!-- Void button in header so it's always visible -->
+    <div class="flex items-center gap-2 flex-shrink-0" onclick="event.stopPropagation()">
+      <button class="btn btn-surface btn-xs" title="Void — patient no longer needs this"
+        onclick="voidRx({{ rx.id }}, this)">🗑 Void</button>
+    </div>
   </div>
 
   <div class="vc-body open" id="rxb{{ rx.id }}">
-      <br>
+    <br>
     {% if rx.doctor_note %}
     <div class="alert a-info" style="margin-bottom:12px">
       <span class="alert-icon">📋</span>
-      <div>
-        <strong>Doctor's note:</strong> {{ rx.doctor_note }}
-      </div>
+      <div><strong>Doctor's note:</strong> {{ rx.doctor_note }}</div>
     </div>
     {% endif %}
 
     <div class="section-label">Drugs</div>
-
     {% for item in rx.drugs.all %}
     <div class="drug-row">
       <div class="drug-name">
         {{ item.drug.name }}
-        {% if item.drug.strength %}
-          <span class="text-muted">({{ item.drug.strength }})</span>
-        {% endif %}
-        {% if item.drug.dosage_form %}
-          <span class="text-xs text-muted">{{ item.drug.dosage_form }}</span>
-        {% endif %}
-        {% if item.drug.is_injection %}
-          <span class="badge b-blue" style="font-size:.58rem">💉</span>
-        {% endif %}
+        {% if item.drug.strength %}<span class="text-muted">({{ item.drug.strength }})</span>{% endif %}
+        {% if item.drug.dosage_form %}<span class="text-xs text-muted">{{ item.drug.dosage_form }}</span>{% endif %}
+        {% if item.drug.is_injection %}<span class="badge b-blue" style="font-size:.58rem">💉</span>{% endif %}
       </div>
-
       <div class="flex items-center gap-2 flex-shrink-0">
         <span class="mono text-xs text-muted">×{{ item.quantity }}</span>
         <span class="mono text-xs text-teal">₦{{ item.price_at_time|floatformat:0 }}</span>
@@ -138,22 +120,10 @@
     {% endfor %}
 
     <div class="flex gap-2 items-center" style="margin-top:14px;flex-wrap:wrap">
-      <input class="inp"
-             id="pnote_{{ rx.id }}"
-             placeholder="Pharmacist note (optional)…"
-             style="flex:1;min-width:180px">
-
-      <button class="btn btn-teal btn-sm"
-              onclick="dispense({{ rx.id }}, 'dispensed', this)">
-        ✅ Dispense
-      </button>
-
-      <button class="btn btn-danger btn-sm"
-              onclick="dispense({{ rx.id }}, 'rejected', this)">
-        ✕ Reject
-      </button>
+      <input class="inp" id="pnote_{{ rx.id }}" placeholder="Pharmacist note (optional)…" style="flex:1;min-width:180px">
+      <button class="btn btn-teal btn-sm" onclick="dispense({{ rx.id }},'dispensed',this)">✅ Dispense</button>
+      <button class="btn btn-danger btn-sm" onclick="dispense({{ rx.id }},'rejected',this)">✕ Reject</button>
     </div>
-
   </div>
 </div>
 {% endfor %}
@@ -164,134 +134,59 @@
 
 {% block js %}
 <script>
-
 function toggleRx(id){
-  const body = document.getElementById('rxb' + id);
+  const body = document.getElementById('rxb'+id);
   if(!body) return;
   body.classList.toggle('open');
 }
 
-//  TAKE PRESCRIPTION (LOCK SAFE)
 async function takeRx(rxId, btn){
-  btn.disabled = true;
-  btn.innerText = "Taking...";
-
+  btn.disabled = true; btn.innerText = 'Taking…';
   try {
     const r = await R.post(`/pharmacy/take/${rxId}/`, {});
-
     if(r.status === 'ok'){
-      R.toast('Prescription taken successfully', 'ok');
-
-      // smooth UI removal
+      R.toast('Prescription taken', 'ok');
       const card = btn.closest('.visit-card');
-      if(card){
-        card.style.transition = "all 0.3s ease";
-        card.style.opacity = "0.3";
-        card.style.transform = "scale(0.98)";
-        setTimeout(() => card.remove(), 300);
-      }
-
+      if(card){ card.style.opacity='0.3'; setTimeout(()=>card.remove(),300); }
     } else {
-      R.toast(r.error || 'Already taken by another pharmacist', 'err');
-      btn.disabled = false;
-      btn.innerText = "Take";
+      R.toast(r.error||'Already taken','err');
+      btn.disabled=false; btn.innerText='Take';
     }
-
-  } catch (e) {
-    R.toast('Network error', 'err');
-    btn.disabled = false;
-    btn.innerText = "Take";
-  }
+  } catch(e){ R.toast('Network error','err'); btn.disabled=false; btn.innerText='Take'; }
 }
 
-//
-// 💊 DISPENSE / REJECT
-//
 async function dispense(rxId, status, btn){
-  const confirmMsg = status === 'dispensed'
-    ? 'Mark this prescription as DISPENSED?'
-    : 'Reject this prescription?';
-
-  if(!confirm(confirmMsg)) return;
-
-  btn.disabled = true;
-  const originalText = btn.innerText;
-  btn.innerText = "Processing...";
-
+  if(!confirm(status==='dispensed'?'Mark as dispensed?':'Reject this prescription?')) return;
+  btn.disabled=true; const orig=btn.innerText; btn.innerText='…';
   try {
-    const r = await R.post(`/pharmacy/dispense/${rxId}/`, {
-      status,
-      pharmacist_note: document.getElementById('pnote_' + rxId)?.value || ''
+    const r = await R.post(`/pharmacy/dispense/${rxId}/`,{
+      status, pharmacist_note: document.getElementById('pnote_'+rxId)?.value||''
     });
+    if(r.status==='ok'){
+      R.toast(status==='dispensed'?'Dispensed ✓':'Rejected','ok');
+      const card = document.getElementById('rxcard'+rxId);
+      if(card){ card.style.opacity='0.2'; setTimeout(()=>card.remove(),400); }
+    } else { R.toast(r.error||'Failed','err'); btn.disabled=false; btn.innerText=orig; }
+  } catch(e){ R.toast('Network error','err'); btn.disabled=false; btn.innerText=orig; }
+}
 
-    if(r.status === 'ok'){
-      R.toast(status === 'dispensed' ? 'Dispensed ✓' : 'Rejected ✓',
-              status === 'dispensed' ? 'ok' : 'warn');
-
-      const card = document.getElementById('rxb' + rxId)?.closest('.visit-card');
+async function voidRx(rxId, btn){
+  if(!confirm('Void this prescription? This marks it as cancelled — the patient will not receive these drugs.')) return;
+  btn.disabled=true; btn.textContent='…';
+  try {
+    const r = await R.post(`/pharmacy/void/${rxId}/`, {});
+    if(r.status==='ok'){
+      R.toast('Prescription voided','warn');
+      const card = document.getElementById('rxcard'+rxId);
       if(card){
-        card.style.transition = "all 0.3s ease";
-        card.style.opacity = "0.2";
-        setTimeout(() => card.remove(), 400);
+        card.style.opacity='0.25';
+        card.style.borderColor='var(--red-border)';
+        setTimeout(()=>card.remove(),500);
       }
-
-    } else {
-      R.toast(r.error || 'Action failed', 'err');
-      btn.disabled = false;
-      btn.innerText = originalText;
-    }
-
-  } catch (e) {
-    R.toast('Network error', 'err');
-    btn.disabled = false;
-    btn.innerText = originalText;
-  }
+    } else { R.toast(r.error||'Could not void','err'); btn.disabled=false; btn.textContent='🗑 Void'; }
+  } catch(e){ R.toast('Network error','err'); btn.disabled=false; btn.textContent='🗑 Void'; }
 }
 
-//
-// ⚡ REAL-TIME UPDATES (POLLING)
-// - checks for new prescriptions every 12 seconds
-// - updates ONLY dashboard section (lightweight approach)
-//
-async function refreshDashboard(){
-  try {
-    const res = await fetch(window.location.href, {
-      headers: {
-        "X-Requested-With": "XMLHttpRequest"
-      }
-    });
-
-    if(!res.ok) return;
-
-    const html = await res.text();
-
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
-
-    const newUnassigned = doc.querySelectorAll('.visit-card')[0];
-    const newMyPending = doc.querySelectorAll('.visit-card')[1];
-
-    // SIMPLE SAFE OPTION: reload if structure changes
-    if(!newUnassigned || !newMyPending){
-      location.reload();
-      return;
-    }
-
-    // fallback safe reload strategy (avoids DOM mismatch bugs)
-    const currentUnassigned = document.querySelector('.section-label');
-    if(currentUnassigned){
-      location.reload();
-    }
-
-  } catch (e) {
-    console.log("Refresh failed", e);
-  }
-}
-
-//
-// start polling
-//
-setInterval(refreshDashboard, 12000);
-
+setInterval(()=>location.reload(), 12000);
 </script>
 {% endblock %}
