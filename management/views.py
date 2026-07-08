@@ -859,50 +859,44 @@ def lab_attendant_history(request):
 @login_required
 def accountant_history(request):
     """
-    FIX: payments are now grouped by session (payment_group) rather than
-    shown as flat individual rows. Payments with an empty payment_group
-    (standalone consultation/lab/rx) are bucketed under their visit id
-    so the accountant still sees one card per patient encounter instead
-    of N separate line items for the same visit.
+    Every payment a patient made during their entire visit — consultation,
+    lab, prescription, admission, surgery, ward meds — is grouped under
+    ONE card keyed by visit_id. No more splitting by payment_group.
     """
     if not _is_role(request.user, 'accountant'):
         return redirect('dashboard_home')
 
     from accounting.models import Payment
-    from itertools import groupby
-    from operator import attrgetter
+    from collections import defaultdict
 
     payments = list(
         Payment.objects.filter(accountant=request.user, is_paid=True)
-        .select_related('patient', 'visit', 'surgery', 'admission', 'prescription', 'lab_request')
+        .select_related('patient', 'visit', 'visit__doctor', 'surgery',
+                        'admission', 'prescription', 'lab_request')
         .prefetch_related('prescription__drugs__drug', 'lab_request__tests__test')
-        .order_by('visit_id', 'payment_group', '-paid_at')
+        .order_by('visit_id', 'created_at')
     )
 
-    # Build a stable session key: explicit payment_group if set, else visit id
-    def session_key(p):
-        return p.payment_group or f'visit-{p.visit_id}'
-
-    payments.sort(key=lambda p: (session_key(p), p.paid_at), reverse=False)
-    payments.sort(key=session_key)
+    # Group strictly by visit_id — one card per visit, all payment types merged
+    visit_map = defaultdict(list)
+    for p in payments:
+        visit_map[p.visit_id].append(p)
 
     sessions = []
-    for key, group in groupby(payments, key=session_key):
-        group_list = list(group)
-        group_list.sort(key=lambda p: p.paid_at or p.created_at, reverse=True)
+    for visit_id, group_list in visit_map.items():
         first = group_list[0]
         total = sum(float(p.amount) for p in group_list)
+        latest = max((p.paid_at for p in group_list if p.paid_at), default=None)
         sessions.append({
-            'key': key,
-            'patient': first.patient,
-            'visit': first.visit,
-            'surgery': first.surgery,
-            'admission': first.admission,
-            'payments': group_list,
-            'total': total,
-            'latest_paid_at': max((p.paid_at for p in group_list if p.paid_at), default=None),
-            'is_surgery': key.startswith('surgery-'),
-            'is_admission': key.startswith('admission-'),
+            'visit_id':      visit_id,
+            'patient':       first.patient,
+            'visit':         first.visit,
+            'payments':      sorted(group_list, key=lambda p: p.created_at),
+            'total':         total,
+            'latest_paid_at': latest,
+            'has_surgery':   any(p.surgery_id for p in group_list),
+            'has_admission': any(p.admission_id for p in group_list),
+            'payment_count': len(group_list),
         })
 
     sessions.sort(key=lambda s: s['latest_paid_at'] or timezone.now(), reverse=True)
@@ -947,6 +941,10 @@ def ward_dashboard(request):
         is_approved=True,
         is_available=True,
     )
+
+    print("Admissions:", admissions.count())
+    print("Wards:", ward_choices)
+
 
     ctx = {
         'nurse': request.user,

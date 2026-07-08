@@ -6,7 +6,7 @@
 
 {% block nav %}
 <a href="{% url 'accountant_dashboard' %}" class="sb-item">
-  <span class="sb-icon">💳</span> Pending
+  <span class="sb-icon">💳</span> Active Sessions
 </a>
 <a href="{% url 'accountant_history' %}" class="sb-item active">
   <span class="sb-icon">📂</span> History
@@ -21,42 +21,52 @@
 <div class="card">
   <div class="empty-state">
     <div class="empty-icon">📂</div>
-    <div class="empty-title">No processed payments yet</div>
-    <div class="empty-sub">Confirmed payments will appear here, grouped by visit or session.</div>
+    <div class="empty-title">No history yet</div>
+    <div class="empty-sub">Completed visit payments will appear here, one card per patient visit.</div>
   </div>
 </div>
 {% else %}
 
-<div class="flex-col">
+<!-- Search -->
+<div style="margin-bottom:14px;position:relative">
+  <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:.88rem;pointer-events:none">🔍</span>
+  <input class="inp" id="histSearch" placeholder="Search patient name or visit #…"
+    style="padding-left:38px" oninput="filterHist(this.value)">
+</div>
+
+<div id="histList">
 {% for s in sessions %}
-<div class="card" style="margin-bottom:10px;{% if s.is_surgery %}border-color:var(--purple-border){% elif s.is_admission %}border-color:var(--teal-border){% endif %}">
-  <div class="card-header" style="cursor:pointer" onclick="toggleSession('sess{{ forloop.counter }}')">
-    <div class="flex items-center gap-3 flex-1" style="min-width:0">
-      <div style="width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1rem;background:{% if s.is_surgery %}var(--purple-dim){% elif s.is_admission %}var(--teal-dim){% else %}var(--accent-dim){% endif %};border:1px solid {% if s.is_surgery %}var(--purple-border){% elif s.is_admission %}var(--teal-border){% else %}rgba(59,130,246,.3){% endif %}">
-        {% if s.is_surgery %}⚕{% elif s.is_admission %}🛏{% else %}💳{% endif %}
+<div class="hist-card visit-card" style="margin-bottom:10px"
+  data-patient="{{ s.patient.display_name|lower }}"
+  data-visit="{{ s.visit_id }}">
+
+  <div class="vc-header" onclick="toggleHist('hb{{ s.visit_id }}','hch{{ s.visit_id }}')">
+    <div class="vc-queue" style="font-size:.62rem;background:var(--bg-elevated);color:var(--text-2)">
+      #{{ s.visit_id }}
+    </div>
+    <div class="vc-info">
+      <div class="vc-name">
+        {{ s.patient.display_name }}
+        <span class="badge b-teal">✓ {{ s.payment_count }} payment{{ s.payment_count|pluralize }}</span>
+        {% if s.has_surgery %}<span class="badge b-purple">⚕ Surgery</span>{% endif %}
+        {% if s.has_admission %}<span class="badge b-teal">🛏 Ward</span>{% endif %}
       </div>
-      <div style="min-width:0">
-        <div class="flex items-center gap-2 flex-wrap">
-          <span class="fw-7 text-sm">{{ s.patient.display_name }}</span>
-          {% if s.is_surgery %}<span class="badge b-purple">⚕ Surgery Session</span>
-          {% elif s.is_admission %}<span class="badge b-teal">🛏 Admission Session</span>
-          {% else %}<span class="badge b-gray">Visit #{{ s.visit.id }}</span>{% endif %}
-          {% if s.surgery %}<span class="badge b-gray">{{ s.surgery.procedure_name|truncatechars:24 }}</span>{% endif %}
-        </div>
-        <div class="text-xs text-muted mt-1">
-          {{ s.payments|length }} payment{{ s.payments|length|pluralize }} · {{ s.latest_paid_at|date:"d M Y, H:i" }}
-        </div>
+      <div class="vc-meta">
+        {% if s.visit.doctor %}<span>Dr. {{ s.visit.doctor.display_name }}</span><span class="vc-meta-dot"></span>{% endif %}
+        <span class="mono fw-7 text-teal">₦{{ s.total|floatformat:0 }} total paid</span>
+        <span class="vc-meta-dot"></span>
+        <span>{{ s.latest_paid_at|date:"d M Y, H:i" }}</span>
       </div>
     </div>
-    <div class="flex items-center gap-3 flex-shrink-0">
-      <span class="mono fw-8" style="color:var(--teal);font-size:1.05rem">₦{{ s.total|floatformat:0 }}</span>
-      <svg id="sessch{{ forloop.counter }}" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--text-muted);transition:transform .2s">
-        <path d="M3 5l4 4 4-4"/>
-      </svg>
-    </div>
+    <svg id="hch{{ s.visit_id }}" width="14" height="14" viewBox="0 0 14 14" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round"
+      style="color:var(--text-muted);transition:transform .2s;flex-shrink:0">
+      <path d="M3 5l4 4 4-4"/>
+    </svg>
   </div>
 
-  <div id="sess{{ forloop.counter }}" style="display:none">
+  <!-- All payments for this visit, every type merged -->
+  <div class="vc-body" id="hb{{ s.visit_id }}">
     <div class="table-wrap" style="border:none;border-radius:0">
       <table>
         <thead>
@@ -74,26 +84,48 @@
             <td>
               <div class="flex items-center gap-2">
                 <span class="badge b-green">{{ pay.get_payment_type_display }}</span>
-                {% if pay.total_parts > 1 %}<span class="badge b-blue">Part {{ pay.part_number }}/{{ pay.total_parts }}</span>{% endif %}
+                {% if pay.total_parts > 1 %}
+                <span class="badge b-blue">Part {{ pay.part_number }}/{{ pay.total_parts }}</span>
+                {% endif %}
+                {% if pay.surgery %}<span class="badge b-purple" style="font-size:.58rem">⚕</span>{% endif %}
+                {% if pay.admission and not pay.surgery %}<span class="badge b-teal" style="font-size:.58rem">🛏</span>{% endif %}
               </div>
             </td>
             <td class="text-xs text-dim">
-              {% if pay.prescription %}{{ pay.prescription.drugs.count }} drug{{ pay.prescription.drugs.count|pluralize }}
-              {% elif pay.lab_request %}{{ pay.lab_request.tests.count }} test{{ pay.lab_request.tests.count|pluralize }}
-              {% elif pay.admission %}{{ pay.admission.get_ward_display }} · Bed {{ pay.admission.bed_number }}
+              {% if pay.prescription %}
+                {{ pay.prescription.drugs.count }} drug{{ pay.prescription.drugs.count|pluralize }}
+                {% for item in pay.prescription.drugs.all %}
+                <div style="color:var(--text-muted)">· {{ item.drug.name }} ×{{ item.quantity }}</div>
+                {% endfor %}
+              {% elif pay.lab_request %}
+                {{ pay.lab_request.tests.count }} test{{ pay.lab_request.tests.count|pluralize }}
+                {% for t in pay.lab_request.tests.all %}
+                <div style="color:var(--text-muted)">· {{ t.test.name }}</div>
+                {% endfor %}
+              {% elif pay.admission %}
+                {{ pay.admission.ward.name|default:"Ward" }} · Bed {{ pay.admission.bed_number }}
+              {% elif pay.surgery %}
+                {{ pay.surgery.procedure_name|truncatechars:40 }}
+              {% elif pay.payment_type == 'consultation' %}
+                Consultation fee
               {% else %}—{% endif %}
             </td>
             <td class="mono fw-7 text-teal">₦{{ pay.amount|floatformat:0 }}</td>
             <td class="text-xs text-muted">{{ pay.paid_at|date:"d M, H:i" }}</td>
             <td>
-              {% if pay.total_parts == 1 or pay.part_number == pay.total_parts %}
-              <a href="/accounting/receipt/{{ pay.id }}/print/" target="_blank" class="btn btn-ghost btn-xs">🖨 Receipt</a>
-              {% endif %}
+              <a href="/accounting/receipt/{{ pay.id }}/print/" target="_blank"
+                class="btn btn-ghost btn-xs">🖨</a>
             </td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
+    </div>
+
+    <!-- Session total footer -->
+    <div style="padding:10px 16px;background:var(--bg-elevated);border-top:1px solid var(--border);display:flex;justify-content:flex-end;align-items:center;gap:6px">
+      <span class="text-xs text-muted">Visit total:</span>
+      <span class="mono fw-8 text-teal" style="font-size:.95rem">₦{{ s.total|floatformat:0 }}</span>
     </div>
   </div>
 </div>
@@ -106,13 +138,19 @@
 
 {% block js %}
 <script>
-function toggleSession(id){
-  const el = document.getElementById(id);
-  const ch = document.getElementById(id.replace('sess','sessch'));
-  if(!el) return;
-  const open = el.style.display === 'none';
-  el.style.display = open ? 'block' : 'none';
-  if(ch) ch.style.transform = open ? 'rotate(180deg)' : '';
+function toggleHist(bodyId, chevId){
+  const b=document.getElementById(bodyId), c=document.getElementById(chevId);
+  if(!b) return;
+  const open=b.classList.toggle('open');
+  if(c) c.style.transform=open?'rotate(180deg)':'';
+}
+function filterHist(q){
+  q=q.toLowerCase().trim();
+  document.querySelectorAll('.hist-card').forEach(card=>{
+    const name=card.dataset.patient||'';
+    const vid=card.dataset.visit||'';
+    card.style.display=(!q||name.includes(q)||vid.includes(q))?'':'none';
+  });
 }
 </script>
 {% endblock %}
