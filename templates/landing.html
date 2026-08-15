@@ -111,112 +111,112 @@
         }
 
         /* ---------- NAV ---------- */
-        /* ---------- NAV ---------- */
-.nav {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-    padding: 16px 24px;
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;   /* left spacer, center links, right actions */
-    align-items: center;
-    transition: background 0.3s ease, box-shadow 0.3s ease;
-}
-.nav.scrolled {
-    background: rgba(11, 11, 15, 0.75);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border-bottom: 1px solid var(--border);
-}
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 16px 24px;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+        .nav.scrolled {
+            background: rgba(11, 11, 15, 0.75);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid var(--border);
+        }
 
-.nav-links {
-    grid-column: 2;
-    justify-self: center;
-    display: flex;
-    gap: 28px;
-    font-weight: 500;
-    font-size: 0.9rem;
-}
-.nav-links a {
-    color: var(--text-2);
-    transition: color 0.2s;
-}
-.nav-links a:hover {
-    color: var(--text);
-}
+        .nav-links {
+            grid-column: 2;
+            justify-self: center;
+            display: flex;
+            gap: 28px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        .nav-links a {
+            color: var(--text-2);
+            transition: color 0.2s;
+        }
+        .nav-links a:hover {
+            color: var(--text);
+        }
 
-.nav-right {
-    grid-column: 3;
-    justify-self: end;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-}
-.nav-login {
-    font-weight: 500;
-    font-size: 0.9rem;
-    color: var(--text-2);
-    transition: color 0.2s;
-}
-.nav-login:hover {
-    color: var(--text);
-}
-.nav-cta {
-    background: linear-gradient(135deg, var(--accent), var(--teal));
-    padding: 8px 20px;
-    border-radius: 100px;
-    font-weight: 600;
-    font-size: 0.85rem;
-    color: #fff;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-.nav-cta:hover {
-    transform: scale(1.04);
-    box-shadow: 0 4px 20px rgba(108, 140, 255, 0.3);
-}
+        .nav-right {
+            grid-column: 3;
+            justify-self: end;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .nav-login {
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--text-2);
+            transition: color 0.2s;
+        }
+        .nav-login:hover {
+            color: var(--text);
+        }
+        .nav-cta {
+            background: linear-gradient(135deg, var(--accent), var(--teal));
+            padding: 8px 20px;
+            border-radius: 100px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #fff;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .nav-cta:hover {
+            transform: scale(1.04);
+            box-shadow: 0 4px 20px rgba(108, 140, 255, 0.3);
+        }
 
-/* Desktop / Tablet – links visible */
-@media (min-width: 601px) {
-    .nav-links {
-        display: flex;  /* ensure they stay visible */
-    }
-}
+        /* Desktop / Tablet – links visible */
+        @media (min-width: 601px) {
+            .nav-links {
+                display: flex;
+            }
+        }
 
-/* Mobile – hide links and center the buttons */
-@media (max-width: 600px) {
-    .nav {
-        padding: 12px 16px;
-        grid-template-columns: 1fr;          /* single column */
-        justify-items: center;               /* center everything */
-    }
-    .nav-links {
-        display: none;                       /* completely hidden on mobile */
-    }
-    .nav-right {
-        grid-column: 1;                      /* place in the single column */
-        justify-self: center;                /* center the buttons */
-    }
-    .nav-cta {
-        padding: 6px 14px;
-        font-size: 0.75rem;
-    }
-    .nav-login {
-        font-size: 0.8rem;
-    }
-}
+        /* Mobile – hide links, buttons on the right */
+        @media (max-width: 600px) {
+            .nav {
+                padding: 12px 16px;
+                grid-template-columns: 1fr auto;
+                justify-items: start;
+            }
+            .nav-links {
+                display: none;
+            }
+            .nav-right {
+                grid-column: 2;
+                justify-self: end;
+            }
+            .nav-cta {
+                padding: 6px 14px;
+                font-size: 0.75rem;
+            }
+            .nav-login {
+                font-size: 0.8rem;
+            }
+        }
 
         /* ---------- HERO ---------- */
         .hero {
-            min-height: 100vh;
+            height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            padding: 120px 24px 60px;
+            justify-content: flex-start;
+            padding: 120px 24px 16px;
             position: relative;
             overflow: hidden;
+            gap: 16px;
         }
         .hero::before {
             content: '';
@@ -228,12 +228,15 @@
             background: radial-gradient(circle at 70% 30%, rgba(108, 140, 255, 0.08), transparent 60%);
             pointer-events: none;
         }
+
         .hero-content {
             max-width: 700px;
             text-align: center;
             z-index: 2;
-            margin-bottom: 40px;
+            flex-shrink: 1;
+            width: 100%;
         }
+
         .hero-badge {
             display: inline-flex;
             align-items: center;
@@ -245,7 +248,7 @@
             padding: 6px 16px 6px 6px;
             font-size: 0.8rem;
             color: var(--text-2);
-            margin-bottom: 32px;
+            margin-bottom: 20px;
             transition: background 0.2s;
         }
         .hero-badge:hover {
@@ -260,35 +263,37 @@
             font-size: 0.7rem;
             letter-spacing: 0.03em;
         }
+
         .hero-title {
-            font-size: clamp(2.8rem, 8vw, 4.8rem);
+            font-size: clamp(2.2rem, 6vw, 4.2rem);
             font-weight: 900;
             line-height: 1.05;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
         }
         .hero-subtitle {
-            font-size: 1.1rem;
+            font-size: clamp(0.95rem, 1.3vw, 1.1rem);
             color: var(--text-2);
             max-width: 540px;
-            margin: 0 auto 40px;
-            line-height: 1.7;
+            margin: 0 auto 24px;
+            line-height: 1.6;
         }
         .hero-actions {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 16px;
-            margin-bottom: 40px;
+            gap: 12px;
+            margin-bottom: 20px;
         }
+
         .btn-hero-primary {
             display: inline-flex;
             align-items: center;
             gap: 8px;
             background: linear-gradient(135deg, var(--accent), var(--teal));
-            padding: 14px 32px;
+            padding: 12px 28px;
             border-radius: 100px;
             font-weight: 600;
-            font-size: 1rem;
+            font-size: clamp(0.9rem, 1vw, 1rem);
             color: #fff;
             transition: transform 0.2s, box-shadow 0.2s;
         }
@@ -298,10 +303,10 @@
         }
         .btn-hero-secondary {
             display: inline-block;
-            padding: 14px 32px;
+            padding: 12px 28px;
             border-radius: 100px;
             font-weight: 500;
-            font-size: 1rem;
+            font-size: clamp(0.9rem, 1vw, 1rem);
             color: var(--text);
             border: 1px solid var(--border);
             background: var(--surface);
@@ -311,52 +316,59 @@
             background: var(--surface-hover);
             transform: scale(1.02);
         }
+
         .hero-trust {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
             gap: 12px 24px;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--text-2);
         }
         .hero-trust-divider {
             width: 1px;
-            height: 20px;
+            height: 16px;
             background: var(--border);
         }
+
         .hero-image {
             width: 100%;
-            max-width: 600px;
+            max-width: 500px;
+            flex-shrink: 0;
             border-radius: var(--radius);
             overflow: hidden;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
             border: 1px solid var(--border);
             transform: perspective(1000px) rotateY(-3deg) rotateX(2deg);
             transition: transform 0.6s ease;
+            max-height: 45vh;
         }
         .hero-image:hover {
             transform: perspective(1000px) rotateY(0deg) rotateX(0deg);
         }
         .hero-image img {
             width: 100%;
-            height: auto;
+            height: 100%;
             object-fit: cover;
             aspect-ratio: 16/10;
         }
+
+        /* ---- Desktop (row layout) ---- */
         @media (min-width: 992px) {
             .hero {
                 flex-direction: row;
                 justify-content: space-between;
                 text-align: left;
-                padding: 140px 40px 80px;
+                padding: 80px 40px 10px;
+                gap: 20px;
             }
             .hero-content {
                 text-align: left;
                 max-width: 50%;
-                margin-bottom: 0;
+                flex-shrink: 1;
             }
             .hero-subtitle {
-                margin: 0 0 40px;
+                margin: 0 0 24px;
             }
             .hero-actions {
                 justify-content: flex-start;
@@ -365,20 +377,71 @@
                 justify-content: flex-start;
             }
             .hero-image {
-                max-width: 45%;
+                max-width: 42%;
+                max-height: 70vh;
             }
         }
-        @media (max-width: 480px) {
+
+        /* ---- Tablet (between 601px and 991px) ---- */
+        @media (min-width: 601px) and (max-width: 991px) {
+            .hero {
+                padding: 76px 24px 10px;
+                gap: 16px;
+            }
+            .hero-image {
+                max-width: 70%;
+                max-height: 40vh;
+            }
             .hero-title {
-                font-size: 2.2rem;
+                font-size: clamp(2.5rem, 5vw, 3.2rem);
+            }
+        }
+
+        /* ---- Mobile (≤600px) ---- */
+        @media (max-width: 600px) {
+            .hero {
+                padding: 90px 16px 8px;       /* more top padding, small bottom padding */
+                gap: 20px;                    /* increased gap between content and image */
+                justify-content: flex-start;
+            }
+            .hero-title {
+                font-size: clamp(1.8rem, 7vw, 2.4rem);
+                margin-bottom: 16px;          /* extra space below title */
             }
             .hero-subtitle {
-                font-size: 1rem;
+                font-size: 0.95rem;           /* slightly larger for readability */
+                margin-bottom: 20px;          /* more space below subtitle */
+                line-height: 1.6;
+            }
+            .hero-actions {
+                margin-bottom: 20px;          /* more space below buttons */
+                gap: 12px;
             }
             .btn-hero-primary,
             .btn-hero-secondary {
-                padding: 12px 24px;
+                padding: 12px 24px;           /* slightly larger touch targets */
                 font-size: 0.9rem;
+            }
+            .hero-trust {
+                font-size: 0.75rem;           /* slightly bigger text */
+                gap: 12px 20px;
+                margin-bottom: 8px;
+            }
+            .hero-trust-divider {
+                height: 14px;
+            }
+            .hero-image {
+                max-width: 90%;
+                max-height: 38vh;             /* increased from 32vh to give more presence */
+                margin-top: 4px;
+            }
+            .hero-image img {
+                aspect-ratio: 16/10;
+            }
+            .hero-badge {
+                font-size: 0.7rem;
+                margin-bottom: 16px;          /* more space below badge */
+                padding: 4px 12px 4px 4px;
             }
         }
 
@@ -388,7 +451,7 @@
             grid-template-columns: repeat(2, 1fr);
             gap: 20px;
             max-width: 1000px;
-            margin: -20px auto 40px;
+            margin: 20px auto 40px;   /* removed negative margin */
             padding: 0 24px;
             position: relative;
             z-index: 2;
@@ -747,9 +810,6 @@
             .container {
                 padding: 0 16px;
             }
-            .hero {
-                padding: 100px 16px 40px;
-            }
             .stats-strip {
                 padding: 0 16px;
             }
@@ -772,17 +832,17 @@
 
     <!-- NAV -->
     <nav class="nav" id="mainNav">
-      <div class="nav-links">
-          <a href="#features">Features</a>
-          <a href="#ai">AI</a>
-          <a href="#roles">Roles</a>
-          <a href="#testimonials">Testimonials</a>
-      </div>
-      <div class="nav-right">
-          <a href="/login/" class="nav-login">Sign in</a>
-          <a href="/login/" class="nav-cta">Get started →</a>
-      </div>
-  </nav>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#ai">AI</a>
+            <a href="#roles">Roles</a>
+            <a href="#testimonials">Testimonials</a>
+        </div>
+        <div class="nav-right">
+            <a href="/login/" class="nav-login">Sign in</a>
+            <a href="/login/" class="nav-cta">Get started →</a>
+        </div>
+    </nav>
 
     <!-- HERO -->
     <section class="hero">
@@ -794,6 +854,7 @@
             <p class="hero-subtitle">
                 Rhudesi brings every department — doctors, nurses, pharmacists, lab scientists, and accountants — into one seamless, AI-assisted system built for Nigerian hospitals.
             </p>
+            <br>
             <div class="hero-actions">
                 <a href="/login/" class="btn-hero-primary">
                     Access System
@@ -803,6 +864,7 @@
                 </a>
                 <a href="#features" class="btn-hero-secondary">See how it works</a>
             </div>
+            <br>
             <div class="hero-trust">
                 <span>🔒 Secure &amp; private</span>
                 <span class="hero-trust-divider"></span>
