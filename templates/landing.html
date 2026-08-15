@@ -2,348 +2,999 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Rhudesi Hospital — Intelligent Healthcare Management</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{% static 'css/style.css' %}">
-<link rel="stylesheet" href="{% static 'css/landing.css' %}">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rhudesi Hospital — Intelligent Healthcare</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+        /* ---------- RESET & BASE ---------- */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        :root {
+            --bg: #0b0b0f;
+            --surface: rgba(255, 255, 255, 0.04);
+            --surface-hover: rgba(255, 255, 255, 0.08);
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #f0f0f5;
+            --text-2: rgba(255, 255, 255, 0.6);
+            --text-muted: rgba(255, 255, 255, 0.35);
+            --accent: #6c8cff;
+            --accent-dim: rgba(108, 140, 255, 0.15);
+            --teal: #4dd9c0;
+            --teal-dim: rgba(77, 217, 192, 0.15);
+            --amber: #ffb347;
+            --amber-dim: rgba(255, 179, 71, 0.15);
+            --radius: 20px;
+            --radius-sm: 12px;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            --transition: 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+        img {
+            max-width: 100%;
+            display: block;
+        }
+
+        /* ---------- GLASS CARD ---------- */
+        .glass {
+            background: var(--surface);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        /* ---------- UTILITY ---------- */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        .section {
+            padding: 80px 0;
+        }
+        .section-eyebrow {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+        .section-title {
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 16px;
+        }
+        .section-subtitle {
+            font-size: 1.05rem;
+            color: var(--text-2);
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+        .grad {
+            background: linear-gradient(135deg, var(--accent), var(--teal));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .fade-up {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        .fade-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ---------- NAV ---------- */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+        .nav.scrolled {
+            background: rgba(11, 11, 15, 0.75);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid var(--border);
+        }
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+        .nav-logo-mark {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--teal));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: #fff;
+        }
+        .nav-links {
+            display: none;
+            gap: 28px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        .nav-links a {
+            color: var(--text-2);
+            transition: color 0.2s;
+        }
+        .nav-links a:hover {
+            color: var(--text);
+        }
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .nav-login {
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--text-2);
+            transition: color 0.2s;
+        }
+        .nav-login:hover {
+            color: var(--text);
+        }
+        .nav-cta {
+            background: linear-gradient(135deg, var(--accent), var(--teal));
+            padding: 8px 20px;
+            border-radius: 100px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #fff;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .nav-cta:hover {
+            transform: scale(1.04);
+            box-shadow: 0 4px 20px rgba(108, 140, 255, 0.3);
+        }
+        @media (min-width: 768px) {
+            .nav-links {
+                display: flex;
+            }
+        }
+        @media (max-width: 600px) {
+            .nav {
+                padding: 12px 16px;
+            }
+            .nav-logo span {
+                font-size: 1rem;
+            }
+            .nav-cta {
+                padding: 6px 14px;
+                font-size: 0.75rem;
+            }
+            .nav-login {
+                font-size: 0.8rem;
+            }
+        }
+
+        /* ---------- HERO ---------- */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 120px 24px 60px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -40%;
+            right: -20%;
+            width: 70%;
+            height: 120%;
+            background: radial-gradient(circle at 70% 30%, rgba(108, 140, 255, 0.08), transparent 60%);
+            pointer-events: none;
+        }
+        .hero-content {
+            max-width: 700px;
+            text-align: center;
+            z-index: 2;
+            margin-bottom: 40px;
+        }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--surface);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            padding: 6px 16px 6px 6px;
+            font-size: 0.8rem;
+            color: var(--text-2);
+            margin-bottom: 32px;
+            transition: background 0.2s;
+        }
+        .hero-badge:hover {
+            background: var(--surface-hover);
+        }
+        .hero-badge-tag {
+            background: var(--accent);
+            color: #fff;
+            padding: 2px 12px;
+            border-radius: 100px;
+            font-weight: 700;
+            font-size: 0.7rem;
+            letter-spacing: 0.03em;
+        }
+        .hero-title {
+            font-size: clamp(2.8rem, 8vw, 4.8rem);
+            font-weight: 900;
+            line-height: 1.05;
+            margin-bottom: 20px;
+        }
+        .hero-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-2);
+            max-width: 540px;
+            margin: 0 auto 40px;
+            line-height: 1.7;
+        }
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+        .btn-hero-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, var(--accent), var(--teal));
+            padding: 14px 32px;
+            border-radius: 100px;
+            font-weight: 600;
+            font-size: 1rem;
+            color: #fff;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-hero-primary:hover {
+            transform: scale(1.04);
+            box-shadow: 0 8px 30px rgba(108, 140, 255, 0.3);
+        }
+        .btn-hero-secondary {
+            display: inline-block;
+            padding: 14px 32px;
+            border-radius: 100px;
+            font-weight: 500;
+            font-size: 1rem;
+            color: var(--text);
+            border: 1px solid var(--border);
+            background: var(--surface);
+            transition: background 0.2s, transform 0.2s;
+        }
+        .btn-hero-secondary:hover {
+            background: var(--surface-hover);
+            transform: scale(1.02);
+        }
+        .hero-trust {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px 24px;
+            font-size: 0.85rem;
+            color: var(--text-2);
+        }
+        .hero-trust-divider {
+            width: 1px;
+            height: 20px;
+            background: var(--border);
+        }
+        .hero-image {
+            width: 100%;
+            max-width: 600px;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border);
+            transform: perspective(1000px) rotateY(-3deg) rotateX(2deg);
+            transition: transform 0.6s ease;
+        }
+        .hero-image:hover {
+            transform: perspective(1000px) rotateY(0deg) rotateX(0deg);
+        }
+        .hero-image img {
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+            aspect-ratio: 16/10;
+        }
+        @media (min-width: 992px) {
+            .hero {
+                flex-direction: row;
+                justify-content: space-between;
+                text-align: left;
+                padding: 140px 40px 80px;
+            }
+            .hero-content {
+                text-align: left;
+                max-width: 50%;
+                margin-bottom: 0;
+            }
+            .hero-subtitle {
+                margin: 0 0 40px;
+            }
+            .hero-actions {
+                justify-content: flex-start;
+            }
+            .hero-trust {
+                justify-content: flex-start;
+            }
+            .hero-image {
+                max-width: 45%;
+            }
+        }
+        @media (max-width: 480px) {
+            .hero-title {
+                font-size: 2.2rem;
+            }
+            .hero-subtitle {
+                font-size: 1rem;
+            }
+            .btn-hero-primary,
+            .btn-hero-secondary {
+                padding: 12px 24px;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* ---------- STATS ---------- */
+        .stats-strip {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            max-width: 1000px;
+            margin: -20px auto 40px;
+            padding: 0 24px;
+            position: relative;
+            z-index: 2;
+        }
+        .stat-item {
+            background: var(--surface);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 24px 20px;
+            text-align: center;
+            transition: background 0.2s;
+        }
+        .stat-item:hover {
+            background: var(--surface-hover);
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), var(--teal));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.2;
+        }
+        .stat-desc {
+            font-size: 0.85rem;
+            color: var(--text-2);
+            margin-top: 4px;
+        }
+        @media (min-width: 600px) {
+            .stats-strip {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        /* ---------- FEATURES ---------- */
+        .features-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        .feature-card {
+            background: var(--surface);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 32px 28px;
+            transition: background 0.3s, transform 0.3s, box-shadow 0.3s;
+        }
+        .feature-card:hover {
+            background: var(--surface-hover);
+            transform: translateY(-6px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+        }
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 16px;
+        }
+        .feature-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+        .feature-desc {
+            font-size: 0.92rem;
+            color: var(--text-2);
+            line-height: 1.6;
+        }
+        @media (min-width: 600px) {
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (min-width: 1024px) {
+            .features-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        /* ---------- AI SECTION ---------- */
+        .ai-section {
+            padding: 80px 24px;
+            background: radial-gradient(ellipse at 30% 50%, rgba(108, 140, 255, 0.06), transparent 70%);
+        }
+        .ai-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            gap: 48px;
+            align-items: center;
+        }
+        .ai-visual {
+            background: var(--surface);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            box-shadow: var(--shadow);
+        }
+        .ai-note-area {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            font-size: 0.9rem;
+            color: var(--text-2);
+            border-left: 3px solid var(--accent);
+            margin: 12px 0 20px;
+            line-height: 1.7;
+        }
+        .ai-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, var(--accent), var(--teal));
+            color: #fff;
+            padding: 10px 24px;
+            border-radius: 100px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: default;
+            margin-bottom: 24px;
+        }
+        .ai-suggestion {
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: var(--radius-sm);
+            padding: 4px 0 12px;
+            border: 1px solid var(--border);
+        }
+        .ai-suggestion-header {
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--text);
+            border-bottom: 1px solid var(--border);
+        }
+        .ai-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 8px 16px 12px;
+        }
+        .ai-chip {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            padding: 4px 14px;
+            font-size: 0.75rem;
+            color: var(--text-2);
+            white-space: nowrap;
+        }
+        @media (min-width: 768px) {
+            .ai-inner {
+                grid-template-columns: 1fr 1fr;
+                gap: 60px;
+            }
+        }
+        @media (max-width: 480px) {
+            .ai-visual {
+                padding: 16px;
+            }
+            .ai-note-area {
+                font-size: 0.8rem;
+                padding: 12px;
+            }
+        }
+
+        /* ---------- ROLES ---------- */
+        .roles-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        .role-card {
+            background: var(--surface);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 20px 16px;
+            text-align: center;
+            transition: background 0.2s, transform 0.2s;
+        }
+        .role-card:hover {
+            background: var(--surface-hover);
+            transform: translateY(-4px);
+        }
+        .role-emoji {
+            font-size: 2rem;
+            margin-bottom: 6px;
+        }
+        .role-name {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+        .role-desc {
+            font-size: 0.8rem;
+            color: var(--text-2);
+            line-height: 1.5;
+        }
+        @media (min-width: 600px) {
+            .roles-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        @media (min-width: 992px) {
+            .roles-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        @media (max-width: 480px) {
+            .role-card {
+                padding: 16px 12px;
+            }
+            .role-emoji {
+                font-size: 1.6rem;
+            }
+        }
+
+        /* ---------- TESTIMONIALS ---------- */
+        .testimonials {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        .testimonial {
+            background: var(--surface);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px 24px;
+            transition: background 0.2s;
+        }
+        .testimonial:hover {
+            background: var(--surface-hover);
+        }
+        .testimonial-stars {
+            color: var(--amber);
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+        .testimonial-text {
+            font-size: 0.95rem;
+            color: var(--text-2);
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .testimonial-av {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--teal));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .testimonial-name {
+            font-weight: 600;
+        }
+        .testimonial-role {
+            font-size: 0.8rem;
+            color: var(--text-2);
+        }
+        @media (min-width: 768px) {
+            .testimonials {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        @media (max-width: 480px) {
+            .testimonial {
+                padding: 20px 16px;
+            }
+        }
+
+        /* ---------- CTA ---------- */
+        .cta-section {
+            max-width: 900px;
+            margin: 0 auto 40px;
+            padding: 60px 24px;
+            text-align: center;
+            background: var(--surface);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+        .cta-title {
+            font-size: clamp(1.8rem, 4vw, 2.8rem);
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+        .cta-sub {
+            font-size: 1.05rem;
+            color: var(--text-2);
+            margin-bottom: 32px;
+        }
+        .cta-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        /* ---------- FOOTER ---------- */
+        footer {
+            padding: 40px 24px 24px;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            margin-top: 20px;
+        }
+        .footer-logo {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            font-size: 0.85rem;
+            color: var(--text-2);
+            margin-bottom: 16px;
+        }
+        .footer-links a:hover {
+            color: var(--text);
+        }
+        .footer-copy {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* ---------- RESPONSIVE HELPERS ---------- */
+        @media (max-width: 480px) {
+            .section {
+                padding: 50px 0;
+            }
+            .container {
+                padding: 0 16px;
+            }
+            .hero {
+                padding: 100px 16px 40px;
+            }
+            .stats-strip {
+                padding: 0 16px;
+            }
+            .features-grid,
+            .roles-grid,
+            .testimonials {
+                padding: 0 16px;
+            }
+            .ai-section {
+                padding: 50px 16px;
+            }
+            .cta-section {
+                padding: 40px 16px;
+                margin: 0 16px 30px;
+            }
+        }
+    </style>
 </head>
 <body>
 
-<!-- NAV -->
-<nav class="nav" id="mainNav">
-  <div class="nav-logo">
-    <div class="nav-logo-mark">R</div>
-    <span>Rhudesi Hospital</span>
-  </div>
-  <div class="nav-links">
-    <a href="#features">Features</a>
-    <a href="#ai">AI-Powered</a>
-    <a href="#roles">Roles</a>
-    <a href="#testimonials">Testimonials</a>
-  </div>
-  <div class="nav-right">
-    <a href="/login/" class="nav-login">Sign in</a>
-    <a href="/login/" class="nav-cta">Get started →</a>
-  </div>
-</nav>
-
-<!-- HERO -->
-<section class="hero">
-  <div class="hero-dots"></div>
-  <div class="hero-glow"></div>
-
-  <div class="hero-content">
-    <a href="#ai" class="hero-badge">
-      <span class="hero-badge-tag">New</span>
-      <span>AI clinical suggestions now live</span>
-      <span class="hero-badge-arrow">→</span>
-    </a>
-
-    <h1 class="hero-title">
-      Run your hospital<br>
-      the <span class="grad">smart way.</span>
-    </h1>
-
-    <p class="hero-subtitle">
-      Rhudesi brings every department — doctors, nurses, pharmacists, lab scientists, and accountants — into one seamless, AI-assisted system built for Nigerian hospitals.
-    </p>
-
-    <div class="hero-actions">
-      <a href="/login/" class="btn-hero-primary">
-        Access System
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-          <path d="M3 8h10M9 4l4 4-4 4"/>
-        </svg>
-      </a>
-
-      <a href="#features" class="btn-hero-secondary">
-        See how it works
-      </a>
-    </div>
-
-    <div class="hero-trust">
-      <span>🔒 Secure &amp; private</span>
-      <div class="hero-trust-divider"></div>
-      <span>⚡ Real-time updates</span>
-      <div class="hero-trust-divider"></div>
-      <span>🤖 AI-assisted</span>
-    </div>
-  </div>
-
-  <!-- RIGHT SIDE IMAGE -->
-  <div class="hero-image">
-    {% load static %}
-    <img src="{% static 'img/doc.jpg' %}" alt="Doctor">
-  </div>
-</section>
-
-  <!-- Floating notification card -->
-  <!-- <div class="hero-float-card">
-    <div class="hfc-top">
-      <div class="hfc-dot"></div>
-      <div>
-        <div class="hfc-title">AI suggestion ready</div>
-        <div class="hfc-sub">Dr. Adebayo · Visit #2456</div>
-      </div>
-    </div>
-    <div class="hfc-time">2 minutes ago</div>
-    <div class="hfc-bar"><div class="hfc-bar-fill" style="width:94%"></div></div>
-    <div class="hfc-foot"><span>Confidence</span><span class="hfc-pct">94%</span></div>
-  </div>
-</section> -->
-
-<!-- STATS STRIP -->
-<div class="stats-strip">
-  <div class="stat-item">
-    <div class="stat-number">6+</div>
-    <div class="stat-desc">Role-specific dashboards</div>
-  </div>
-  <div class="stat-item">
-    <div class="stat-number">100%</div>
-    <div class="stat-desc">Server-side secure</div>
-  </div>
-  <div class="stat-item">
-    <div class="stat-number">AI</div>
-    <div class="stat-desc">Clinical decision support</div>
-  </div>
-  <div class="stat-item">
-    <div class="stat-number">∞</div>
-    <div class="stat-desc">Patient records capacity</div>
-  </div>
-</div>
-
-<!-- FEATURES -->
-<section class="section" id="features">
-  <div class="section-center fade-up">
-    <div class="section-eyebrow">Everything you need</div>
-    <h2 class="section-title">One platform for the entire patient journey</h2>
-    <p class="section-subtitle">From first registration to final discharge, every step is tracked, managed, and optimised.</p>
-  </div>
-  <div class="features-grid fade-up">
-    <div class="feature-card">
-      <div class="feature-icon accent">🩺</div>
-      <div class="feature-title">Doctor Workspace</div>
-      <div class="feature-desc">Full patient queue, clinical notes, prescription ordering, lab requests, surgery consent management, and AI-powered clinical suggestions — all in one view.</div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon teal">🛏</div>
-      <div class="feature-title">Ward Management</div>
-      <div class="feature-desc">Real-time bed availability, admission tracking, discharge workflows, ward prescriptions, and per-patient billing breakdowns across all wards.</div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon amber">💊</div>
-      <div class="feature-title">Pharmacy</div>
-      <div class="feature-desc">Pharmacist dashboard with automatic prescription routing after payment confirmation. Full drug inventory visibility with strength and dosage tracking.</div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon blue">🔬</div>
-      <div class="feature-title">Laboratory</div>
-      <div class="feature-desc">Lab scientist queue with assignment, in-progress tracking, result entry, and automatic completion notification — for both outpatient and ward requests.</div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon purple">💳</div>
-      <div class="feature-title">Billing &amp; Payments</div>
-      <div class="feature-desc">Grouped instalment payments for admissions and surgeries, receipt generation, discount tracking, and a clear accountant dashboard for every pending charge.</div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon green">⚕</div>
-      <div class="feature-title">Surgery Management</div>
-      <div class="feature-desc">Full surgery consent workflow — doctor creates, patient reviews and signs, accountant bills, surgeon operates. Pre-surgery labs and drugs fully tracked.</div>
-    </div>
-  </div>
-</section>
-
-<!-- AI SECTION -->
-<section class="ai-section" id="ai">
-  <div class="ai-inner">
-    <div class="fade-up">
-      <div class="section-eyebrow">AI-Powered</div>
-      <h2 class="section-title">Clinical intelligence, built in</h2>
-      <p style="font-size:.95rem;color:var(--text-2);line-height:1.7;margin-bottom:24px">
-        As a doctor writes clinical notes, our AI analyses the presentation and suggests relevant drugs and lab investigations — sourced securely through OpenRouter, never leaving your server.
-      </p>
-      <div style="display:flex;flex-direction:column;gap:14px">
-        <div style="display:flex;gap:12px;align-items:flex-start">
-          <div style="width:32px;height:32px;border-radius:var(--radius-sm);background:var(--accent-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.85rem">✨</div>
-          <div>
-            <div style="font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:3px">Instant suggestions</div>
-            <div style="font-size:.82rem;color:var(--text-2)">One click from the note modal. Drugs and tests suggested in under 3 seconds.</div>
-          </div>
+    <!-- NAV -->
+    <nav class="nav" id="mainNav">
+        <div class="nav-logo">
+            <div class="nav-logo-mark">R</div>
+            <span>Rhudesi</span>
         </div>
-        <div style="display:flex;gap:12px;align-items:flex-start">
-          <div style="width:32px;height:32px;border-radius:var(--radius-sm);background:var(--teal-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.85rem">🔒</div>
-          <div>
-            <div style="font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:3px">Server-side proxy</div>
-            <div style="font-size:.82rem;color:var(--text-2)">API keys never reach the browser. All AI calls go through your Django backend.</div>
-          </div>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#ai">AI</a>
+            <a href="#roles">Roles</a>
+            <a href="#testimonials">Testimonials</a>
         </div>
-        <div style="display:flex;gap:12px;align-items:flex-start">
-          <div style="width:32px;height:32px;border-radius:var(--radius-sm);background:var(--amber-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.85rem">🩺</div>
-          <div>
-            <div style="font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:3px">Doctor always decides</div>
-            <div style="font-size:.82rem;color:var(--text-2)">Suggestions are advisory only. One click to add to Rx or lab order — doctor confirms everything.</div>
-          </div>
+        <div class="nav-right">
+            <a href="/login/" class="nav-login">Sign in</a>
+            <a href="/login/" class="nav-cta">Get started →</a>
         </div>
-      </div>
-    </div>
-    <div class="ai-visual fade-up">
-      <div style="font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px">Add Clinical Note</div>
-      <div class="ai-note-area">
-        Patient presents with fever (39.2°C), productive cough, and right lower lobe dullness on percussion. O2 sat 94% on room air. Likely community-acquired pneumonia...
-      </div>
-      <div class="ai-btn">
-        <span>✨</span> AI Suggest
-      </div>
-      <div class="ai-suggestion">
-        <div class="ai-suggestion-header">✨ AI Clinical Suggestions — review before ordering</div>
-        <div style="padding:8px 12px;font-size:.7rem;color:var(--text-muted);font-style:italic;border-bottom:1px solid var(--border)">Consistent with community-acquired pneumonia. Empiric antibiotic therapy and supportive investigations recommended.</div>
-        <div style="padding:8px 12px;font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-2)">💊 Suggested Drugs</div>
-        <div class="ai-chips">
-          <div class="ai-chip">Amoxicillin-Clavulanate</div>
-          <div class="ai-chip">Azithromycin 500mg</div>
-          <div class="ai-chip">Paracetamol 1g</div>
-          <div class="ai-chip">Salbutamol Inhaler</div>
-        </div>
-        <div style="padding:8px 12px;font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-2)">🧪 Suggested Labs</div>
-        <div class="ai-chips">
-          <div class="ai-chip">FBC + Differential</div>
-          <div class="ai-chip">CRP</div>
-          <div class="ai-chip">Chest X-Ray</div>
-          <div class="ai-chip">Blood Culture</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+    </nav>
 
-<!-- ROLES -->
-<section class="section" id="roles">
-  <div class="section-center fade-up">
-    <div class="section-eyebrow">Role-based access</div>
-    <h2 class="section-title">Built for every member of your team</h2>
-    <p class="section-subtitle">Each role gets a focused, purpose-built dashboard. No clutter, no confusion.</p>
-  </div>
-  <div class="roles-grid fade-up">
-    <div class="role-card">
-      <div class="role-emoji">👨‍⚕️</div>
-      <div class="role-name">Doctor</div>
-      <div class="role-desc">Patient queue, clinical notes, prescriptions, lab orders, surgery management, AI suggestions</div>
-    </div>
-    <div class="role-card">
-      <div class="role-emoji">👩‍⚕️</div>
-      <div class="role-name">Nurse</div>
-      <div class="role-desc">Vitals recording, patient handoff to doctor, ward admission management</div>
-    </div>
-    <div class="role-card">
-      <div class="role-emoji">🏥</div>
-      <div class="role-name">Receptionist</div>
-      <div class="role-desc">Patient registration, visit creation, queue management, appointment scheduling</div>
-    </div>
-    <div class="role-card">
-      <div class="role-emoji">💊</div>
-      <div class="role-name">Pharmacist</div>
-      <div class="role-desc">Prescription fulfilment, drug dispensing, inventory visibility</div>
-    </div>
-    <div class="role-card">
-      <div class="role-emoji">🔬</div>
-      <div class="role-name">Lab Scientist</div>
-      <div class="role-desc">Test queue, assignment tracking, result entry, availability toggling</div>
-    </div>
-    <div class="role-card">
-      <div class="role-emoji">💳</div>
-      <div class="role-name">Accountant</div>
-      <div class="role-desc">Payment processing, instalment management, receipt generation, billing history</div>
-    </div>
-    <div class="role-card">
-      <div class="role-emoji">🛏</div>
-      <div class="role-name">Ward Nurse</div>
-      <div class="role-desc">Ward patients overview, bed management, ward prescriptions, discharge validation</div>
-    </div>
-    <div class="role-card">
-      <div class="role-emoji">🧑‍💻</div>
-      <div class="role-name">Patient</div>
-      <div class="role-desc">Personal dashboard with visit status, lab results, prescriptions, and surgery review</div>
-    </div>
-  </div>
-</section>
-
-<!-- TESTIMONIALS -->
-<section class="section" id="testimonials">
-  <div class="section-center fade-up">
-    <div class="section-eyebrow">Testimonials</div>
-    <h2 class="section-title">Trusted by healthcare professionals</h2>
-  </div>
-  <div class="testimonials fade-up">
-    <div class="testimonial">
-      <div class="testimonial-stars">★★★★★</div>
-      <div class="testimonial-text">"The AI suggestion feature has genuinely saved me time on every patient. I write my note, click AI Suggest, and the drug and lab recommendations are almost always spot-on for my Nigerian patients."</div>
-      <div class="testimonial-author">
-        <div class="testimonial-av">A</div>
-        <div>
-          <div class="testimonial-name">Dr. Adebayo O.</div>
-          <div class="testimonial-role">Internal Medicine Physician</div>
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-content">
+            <a href="#ai" class="hero-badge">
+                <span class="hero-badge-tag">New</span>
+                <span>AI clinical suggestions live</span>
+                <span>→</span>
+            </a>
+            <h1 class="hero-title">
+                Run your hospital<br />
+                the <span class="grad">smart way.</span>
+            </h1>
+            <p class="hero-subtitle">
+                Rhudesi brings every department — doctors, nurses, pharmacists, lab scientists, and accountants — into one seamless, AI-assisted system built for Nigerian hospitals.
+            </p>
+            <div class="hero-actions">
+                <a href="/login/" class="btn-hero-primary">
+                    Access System
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                        <path d="M3 8h10M9 4l4 4-4 4" />
+                    </svg>
+                </a>
+                <a href="#features" class="btn-hero-secondary">See how it works</a>
+            </div>
+            <div class="hero-trust">
+                <span>🔒 Secure &amp; private</span>
+                <span class="hero-trust-divider"></span>
+                <span>⚡ Real-time updates</span>
+                <span class="hero-trust-divider"></span>
+                <span>🤖 AI-assisted</span>
+            </div>
         </div>
-      </div>
-    </div>
-    <div class="testimonial">
-      <div class="testimonial-stars">★★★★★</div>
-      <div class="testimonial-text">"The billing system handles surgery instalments and admission payments automatically. I don't have to manually split payments anymore — it groups everything properly for the patient."</div>
-      <div class="testimonial-author">
-        <div class="testimonial-av">C</div>
-        <div>
-          <div class="testimonial-name">Chidinma E.</div>
-          <div class="testimonial-role">Hospital Accountant</div>
+        <div class="hero-image">
+            <img src="{% static 'img/doc.jpg' %}" alt="Doctor using Rhudesi" />
         </div>
-      </div>
+    </section>
+
+    <!-- STATS -->
+    <div class="stats-strip">
+        <div class="stat-item"><div class="stat-number">6+</div><div class="stat-desc">Role dashboards</div></div>
+        <div class="stat-item"><div class="stat-number">100%</div><div class="stat-desc">Server-side secure</div></div>
+        <div class="stat-item"><div class="stat-number">AI</div><div class="stat-desc">Clinical support</div></div>
+        <div class="stat-item"><div class="stat-number">∞</div><div class="stat-desc">Patient records</div></div>
     </div>
-    <div class="testimonial">
-      <div class="testimonial-stars">★★★★★</div>
-      <div class="testimonial-text">"The lab dashboard is clean and focused. I can see exactly what's assigned to me, mark tests in progress, and enter results without digging through any menus. It works the way a lab should."</div>
-      <div class="testimonial-author">
-        <div class="testimonial-av">F</div>
-        <div>
-          <div class="testimonial-name">Fatima M.</div>
-          <div class="testimonial-role">Senior Lab Scientist</div>
+
+    <!-- FEATURES -->
+    <section class="section" id="features">
+        <div class="container fade-up">
+            <div class="section-eyebrow">Everything you need</div>
+            <h2 class="section-title">One platform for the entire patient journey</h2>
+            <p class="section-subtitle">From registration to discharge, every step is tracked, managed, and optimised.</p>
         </div>
-      </div>
+        <div class="features-grid fade-up">
+            <div class="feature-card"><div class="feature-icon">🩺</div><div class="feature-title">Doctor Workspace</div><div class="feature-desc">Patient queue, clinical notes, prescriptions, lab orders, surgery consent, and AI suggestions in one view.</div></div>
+            <div class="feature-card"><div class="feature-icon">🛏</div><div class="feature-title">Ward Management</div><div class="feature-desc">Real-time bed availability, admission tracking, discharge workflows, and ward-specific billing.</div></div>
+            <div class="feature-card"><div class="feature-icon">💊</div><div class="feature-title">Pharmacy</div><div class="feature-desc">Automatic prescription routing, drug inventory visibility, and dosage tracking.</div></div>
+            <div class="feature-card"><div class="feature-icon">🔬</div><div class="feature-title">Laboratory</div><div class="feature-desc">Test queue, assignment tracking, result entry, and automatic completion notifications.</div></div>
+            <div class="feature-card"><div class="feature-icon">💳</div><div class="feature-title">Billing &amp; Payments</div><div class="feature-desc">Instalment plans, receipt generation, discount tracking, and a clear accountant dashboard.</div></div>
+            <div class="feature-card"><div class="feature-icon">⚕️</div><div class="feature-title">Surgery Management</div><div class="feature-desc">Full consent workflow, pre‑surgery labs and drugs, and surgeon scheduling.</div></div>
+        </div>
+    </section>
+
+    <!-- AI SECTION -->
+    <section class="ai-section" id="ai">
+        <div class="ai-inner">
+            <div class="fade-up">
+                <div class="section-eyebrow">AI-Powered</div>
+                <h2 class="section-title">Clinical intelligence, built in</h2>
+                <p style="font-size:0.95rem;color:var(--text-2);line-height:1.7;margin-bottom:24px">
+                    As a doctor writes clinical notes, our AI analyses the presentation and suggests relevant drugs and lab investigations — sourced securely through OpenRouter, never leaving your server.
+                </p>
+                <div style="display:flex;flex-direction:column;gap:14px">
+                    <div style="display:flex;gap:12px;align-items:flex-start">
+                        <div style="width:32px;height:32px;border-radius:var(--radius-sm);background:var(--accent-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.85rem">✨</div>
+                        <div><div style="font-weight:700;margin-bottom:2px">Instant suggestions</div><div style="font-size:0.85rem;color:var(--text-2)">One click from the note modal. Drugs and tests suggested in under 3 seconds.</div></div>
+                    </div>
+                    <div style="display:flex;gap:12px;align-items:flex-start">
+                        <div style="width:32px;height:32px;border-radius:var(--radius-sm);background:var(--teal-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.85rem">🔒</div>
+                        <div><div style="font-weight:700;margin-bottom:2px">Server-side proxy</div><div style="font-size:0.85rem;color:var(--text-2)">API keys never reach the browser. All AI calls go through your Django backend.</div></div>
+                    </div>
+                    <div style="display:flex;gap:12px;align-items:flex-start">
+                        <div style="width:32px;height:32px;border-radius:var(--radius-sm);background:var(--amber-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.85rem">🩺</div>
+                        <div><div style="font-weight:700;margin-bottom:2px">Doctor always decides</div><div style="font-size:0.85rem;color:var(--text-2)">Suggestions are advisory only. One click to add to Rx or lab order — doctor confirms everything.</div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="ai-visual fade-up">
+                <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px">Add Clinical Note</div>
+                <div class="ai-note-area">
+                    Patient presents with fever (39.2°C), productive cough, and right lower lobe dullness on percussion. O₂ sat 94% on room air. Likely community-acquired pneumonia...
+                </div>
+                <div class="ai-btn"><span>✨</span> AI Suggest</div>
+                <div class="ai-suggestion">
+                    <div class="ai-suggestion-header">✨ AI Clinical Suggestions — review before ordering</div>
+                    <div style="padding:8px 16px;font-size:0.7rem;color:var(--text-muted);font-style:italic;border-bottom:1px solid var(--border)">Consistent with community-acquired pneumonia. Empiric antibiotic therapy and supportive investigations recommended.</div>
+                    <div style="padding:10px 16px 0;font-size:0.65rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-2)">💊 Suggested Drugs</div>
+                    <div class="ai-chips">
+                        <span class="ai-chip">Amoxicillin-Clavulanate</span>
+                        <span class="ai-chip">Azithromycin 500mg</span>
+                        <span class="ai-chip">Paracetamol 1g</span>
+                        <span class="ai-chip">Salbutamol Inhaler</span>
+                    </div>
+                    <div style="padding:6px 16px 0;font-size:0.65rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-2)">🧪 Suggested Labs</div>
+                    <div class="ai-chips">
+                        <span class="ai-chip">FBC + Differential</span>
+                        <span class="ai-chip">CRP</span>
+                        <span class="ai-chip">Chest X-Ray</span>
+                        <span class="ai-chip">Blood Culture</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ROLES -->
+    <section class="section" id="roles">
+        <div class="container fade-up">
+            <div class="section-eyebrow">Role-based access</div>
+            <h2 class="section-title">Built for every member of your team</h2>
+            <p class="section-subtitle">Each role gets a focused, purpose-built dashboard. No clutter, no confusion.</p>
+        </div>
+        <div class="roles-grid fade-up">
+            <div class="role-card"><div class="role-emoji">👨‍⚕️</div><div class="role-name">Doctor</div><div class="role-desc">Patient queue, clinical notes, prescriptions, lab orders, surgery management, AI suggestions</div></div>
+            <div class="role-card"><div class="role-emoji">👩‍⚕️</div><div class="role-name">Nurse</div><div class="role-desc">Vitals recording, patient handoff, ward admission management</div></div>
+            <div class="role-card"><div class="role-emoji">🏥</div><div class="role-name">Receptionist</div><div class="role-desc">Patient registration, visit creation, queue management, appointment scheduling</div></div>
+            <div class="role-card"><div class="role-emoji">💊</div><div class="role-name">Pharmacist</div><div class="role-desc">Prescription fulfilment, drug dispensing, inventory visibility</div></div>
+            <div class="role-card"><div class="role-emoji">🔬</div><div class="role-name">Lab Scientist</div><div class="role-desc">Test queue, assignment tracking, result entry, availability toggling</div></div>
+            <div class="role-card"><div class="role-emoji">💳</div><div class="role-name">Accountant</div><div class="role-desc">Payment processing, instalment management, receipt generation, billing history</div></div>
+            <div class="role-card"><div class="role-emoji">🛏</div><div class="role-name">Ward Nurse</div><div class="role-desc">Ward patients overview, bed management, ward prescriptions, discharge validation</div></div>
+            <div class="role-card"><div class="role-emoji">🧑‍💻</div><div class="role-name">Patient</div><div class="role-desc">Personal dashboard with visit status, lab results, prescriptions, and surgery review</div></div>
+        </div>
+    </section>
+
+    <!-- TESTIMONIALS -->
+    <section class="section" id="testimonials">
+        <div class="container fade-up">
+            <div class="section-eyebrow">Testimonials</div>
+            <h2 class="section-title">Trusted by healthcare professionals</h2>
+        </div>
+        <div class="testimonials fade-up">
+            <div class="testimonial">
+                <div class="testimonial-stars">★★★★★</div>
+                <div class="testimonial-text">"The AI suggestion feature has genuinely saved me time on every patient. I write my note, click AI Suggest, and the drug and lab recommendations are almost always spot-on for my Nigerian patients."</div>
+                <div class="testimonial-author">
+                    <div class="testimonial-av">A</div>
+                    <div><div class="testimonial-name">Dr. Adebayo O.</div><div class="testimonial-role">Internal Medicine Physician</div></div>
+                </div>
+            </div>
+            <div class="testimonial">
+                <div class="testimonial-stars">★★★★★</div>
+                <div class="testimonial-text">"The billing system handles surgery instalments and admission payments automatically. I don't have to manually split payments anymore — it groups everything properly for the patient."</div>
+                <div class="testimonial-author">
+                    <div class="testimonial-av">C</div>
+                    <div><div class="testimonial-name">Chidinma E.</div><div class="testimonial-role">Hospital Accountant</div></div>
+                </div>
+            </div>
+            <div class="testimonial">
+                <div class="testimonial-stars">★★★★★</div>
+                <div class="testimonial-text">"The lab dashboard is clean and focused. I can see exactly what's assigned to me, mark tests in progress, and enter results without digging through any menus. It works the way a lab should."</div>
+                <div class="testimonial-author">
+                    <div class="testimonial-av">F</div>
+                    <div><div class="testimonial-name">Fatima M.</div><div class="testimonial-role">Senior Lab Scientist</div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <div class="cta-section fade-up">
+        <h2 class="cta-title">Ready to transform your hospital?</h2>
+        <p class="cta-sub">Join Rhudesi and bring every department into one intelligent system.</p>
+        <div class="cta-actions">
+            <a href="/login/" class="btn-hero-primary">Access the system →</a>
+            <a href="/admin/" class="btn-hero-secondary">Admin panel</a>
+        </div>
     </div>
-  </div>
-</section>
 
-<!-- CTA -->
-<div class="cta-section fade-up">
-  <h2 class="cta-title">Ready to transform your hospital?</h2>
-  <p class="cta-sub">Join Rhudesi and bring every department into one intelligent system.</p>
-  <div class="cta-actions">
-    <a href="/login/" class="btn-hero-primary">Access the system →</a>
-    <a href="/admin/" class="btn-hero-secondary">Admin panel</a>
-  </div>
-</div>
+    <!-- FOOTER -->
+    <footer>
+        <div class="footer-logo">Rhudesi Hospital Management System</div>
+        <div class="footer-links">
+            <a href="/login/">Sign in</a>
+            <a href="/admin/">Admin</a>
+        </div>
+        <div class="footer-copy">© 2026 Rhudesi Hospital. Built with Django.</div>
+    </footer>
 
-<!-- FOOTER -->
-<footer>
-  <div class="footer-logo">Rhudesi Hospital Management System</div>
-  <div class="footer-links">
-    <a href="/login/">Sign in</a>
-    <a href="/admin/">Admin</a>
-  </div>
-  <div class="footer-copy">© 2026 Rhudesi Hospital. Built with Django.</div>
-</footer>
+    <script src="{% static 'js/app.js' %}"></script>
+    <script>
+        // Nav scroll
+        const nav = document.getElementById('mainNav');
+        window.addEventListener('scroll', () => {
+            nav.classList.toggle('scrolled', window.scrollY > 20);
+        }, { passive: true });
 
-<script src="{% static 'js/app.js' %}"></script>
-<script>
-// Nav scroll
-const _navEl = document.getElementById('mainNav');
-window.addEventListener('scroll', () => _navEl.classList.toggle('scrolled', window.scrollY > 20), {passive:true});
+        // Fade-up observer
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
 
-// Intersection observer for fade-up animations
-const _io = new IntersectionObserver(entries => {
-  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
-}, {threshold:0.1, rootMargin:'0px 0px -40px 0px'});
-document.querySelectorAll('.fade-up').forEach(el => _io.observe(el));
-</script>
+        document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+    </script>
 </body>
 </html>
