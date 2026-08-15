@@ -111,103 +111,101 @@
         }
 
         /* ---------- NAV ---------- */
-        .nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            padding: 16px 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: background 0.3s ease, box-shadow 0.3s ease;
-        }
-        .nav.scrolled {
-            background: rgba(11, 11, 15, 0.75);
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border-bottom: 1px solid var(--border);
-        }
-        .nav-logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 700;
-            font-size: 1.2rem;
-        }
-        .nav-logo-mark {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent), var(--teal));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            font-size: 1.1rem;
-            color: #fff;
-        }
-        .nav-links {
-            display: none;
-            gap: 28px;
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
-        .nav-links a {
-            color: var(--text-2);
-            transition: color 0.2s;
-        }
-        .nav-links a:hover {
-            color: var(--text);
-        }
-        .nav-right {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        .nav-login {
-            font-weight: 500;
-            font-size: 0.9rem;
-            color: var(--text-2);
-            transition: color 0.2s;
-        }
-        .nav-login:hover {
-            color: var(--text);
-        }
-        .nav-cta {
-            background: linear-gradient(135deg, var(--accent), var(--teal));
-            padding: 8px 20px;
-            border-radius: 100px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            color: #fff;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .nav-cta:hover {
-            transform: scale(1.04);
-            box-shadow: 0 4px 20px rgba(108, 140, 255, 0.3);
-        }
-        @media (min-width: 768px) {
-            .nav-links {
-                display: flex;
-            }
-        }
-        @media (max-width: 600px) {
-            .nav {
-                padding: 12px 16px;
-            }
-            .nav-logo span {
-                font-size: 1rem;
-            }
-            .nav-cta {
-                padding: 6px 14px;
-                font-size: 0.75rem;
-            }
-            .nav-login {
-                font-size: 0.8rem;
-            }
-        }
+        /* ---------- NAV ---------- */
+.nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    padding: 16px 24px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;   /* left spacer, center links, right actions */
+    align-items: center;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+.nav.scrolled {
+    background: rgba(11, 11, 15, 0.75);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid var(--border);
+}
+
+.nav-links {
+    grid-column: 2;
+    justify-self: center;
+    display: flex;
+    gap: 28px;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+.nav-links a {
+    color: var(--text-2);
+    transition: color 0.2s;
+}
+.nav-links a:hover {
+    color: var(--text);
+}
+
+.nav-right {
+    grid-column: 3;
+    justify-self: end;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.nav-login {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--text-2);
+    transition: color 0.2s;
+}
+.nav-login:hover {
+    color: var(--text);
+}
+.nav-cta {
+    background: linear-gradient(135deg, var(--accent), var(--teal));
+    padding: 8px 20px;
+    border-radius: 100px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #fff;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.nav-cta:hover {
+    transform: scale(1.04);
+    box-shadow: 0 4px 20px rgba(108, 140, 255, 0.3);
+}
+
+/* Desktop / Tablet – links visible */
+@media (min-width: 601px) {
+    .nav-links {
+        display: flex;  /* ensure they stay visible */
+    }
+}
+
+/* Mobile – hide links and center the buttons */
+@media (max-width: 600px) {
+    .nav {
+        padding: 12px 16px;
+        grid-template-columns: 1fr;          /* single column */
+        justify-items: center;               /* center everything */
+    }
+    .nav-links {
+        display: none;                       /* completely hidden on mobile */
+    }
+    .nav-right {
+        grid-column: 1;                      /* place in the single column */
+        justify-self: center;                /* center the buttons */
+    }
+    .nav-cta {
+        padding: 6px 14px;
+        font-size: 0.75rem;
+    }
+    .nav-login {
+        font-size: 0.8rem;
+    }
+}
 
         /* ---------- HERO ---------- */
         .hero {
@@ -774,30 +772,21 @@
 
     <!-- NAV -->
     <nav class="nav" id="mainNav">
-        <div class="nav-logo">
-            <div class="nav-logo-mark">R</div>
-            <span>Rhudesi</span>
-        </div>
-        <div class="nav-links">
-            <a href="#features">Features</a>
-            <a href="#ai">AI</a>
-            <a href="#roles">Roles</a>
-            <a href="#testimonials">Testimonials</a>
-        </div>
-        <div class="nav-right">
-            <a href="/login/" class="nav-login">Sign in</a>
-            <a href="/login/" class="nav-cta">Get started →</a>
-        </div>
-    </nav>
+      <div class="nav-links">
+          <a href="#features">Features</a>
+          <a href="#ai">AI</a>
+          <a href="#roles">Roles</a>
+          <a href="#testimonials">Testimonials</a>
+      </div>
+      <div class="nav-right">
+          <a href="/login/" class="nav-login">Sign in</a>
+          <a href="/login/" class="nav-cta">Get started →</a>
+      </div>
+  </nav>
 
     <!-- HERO -->
     <section class="hero">
         <div class="hero-content">
-            <a href="#ai" class="hero-badge">
-                <span class="hero-badge-tag">New</span>
-                <span>AI clinical suggestions live</span>
-                <span>→</span>
-            </a>
             <h1 class="hero-title">
                 Run your hospital<br />
                 the <span class="grad">smart way.</span>
